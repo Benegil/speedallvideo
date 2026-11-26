@@ -127,41 +127,83 @@ function positionAllOverlays() {
     });
 }
 
-/* ================= Badge global (aucune <video> sur la page) =================
+/* ================= Badge global (aucune <video> visible, mais un lecteur) =
    Ex : YouTube n'insère son élément <video> qu'au clic sur Play. Tant qu'il
-   n'y a pas de vidéo, on affiche quand même la vitesse en haut à droite de
-   l'écran ; dès qu'une vidéo apparaît, le badge par-vidéo prend le relais. */
+   n'y a pas de vidéo VISIBLE mais qu'un conteneur de lecteur connu existe,
+   on affiche la vitesse en haut à droite DE CE CONTENEUR (pas de l'écran, pour
+   ne pas polluer les pages sans vidéo). Dès qu'une vidéo apparaît, le badge
+   par-vidéo prend le relais. */
+const PLAYER_SELECTORS = [
+    '#movie_player',              // YouTube
+    '.html5-video-player',        // YouTube (repli)
+    '.video-js',                  // Video.js
+    '.player_vimeo_video',        // Vimeo
+    'div[class*="video-player"]'  // lecteurs génériques
+];
+
+function findPlayerContainer() {
+    for (const sel of PLAYER_SELECTORS) {
+        let els;
+        try { els = document.querySelectorAll(sel); } catch (e) { continue; }
+        for (const el of els) {
+            const r = el.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) return el;
+        }
+    }
+    return null;
+}
+
 function updateGlobalBadge(speed) {
-    // Une « vidéo visible » = un <video> avec une surface réelle (ex : sur
-    // YouTube l'élément n'existe pas avant le Play, ou peut être 0x0).
+    // Une « vidéo visible » = un <video> avec une surface réelle.
     const hasVideo = Array.from(document.getElementsByTagName('video')).some(v => {
         const r = v.getBoundingClientRect();
         return r.width > 0 && r.height > 0;
     });
+    const container = hasVideo ? null : findPlayerContainer();
     let badge = document.getElementById('sav-global');
-    if (!hasVideo) {
-        if (!badge) {
-            badge = document.createElement('div');
-            badge.id = 'sav-global';
-            badge.className = 'sav-overlay';
-            badge.setAttribute('data-sav-owner', String(SAV_INSTANCE));
-            badge.style.cssText = 'position:fixed;top:8px;right:8px;z-index:2147483647;pointer-events:none;';
-            const label = document.createElement('span');
-            label.style.cssText = 'font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:12px;font-weight:600;color:#fff;white-space:nowrap;mix-blend-mode:difference;';
-            badge.appendChild(label);
-            (document.body || document.documentElement).appendChild(badge);
-        }
-        const label = badge.querySelector('span');
-        const text = `Speed ${speed}x`;
-        if (label.textContent !== text) label.textContent = text;
-        if (badge.style.display !== 'block') badge.style.display = 'block';
-    } else if (badge && badge.style.display !== 'none') {
-        badge.style.display = 'none'; // une vidéo est là : les badges par-vidéo reprennent
+
+    if (!container) {
+        if (badge && badge.style.display !== 'none') badge.style.display = 'none';
+        return;
     }
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'sav-global';
+        badge.className = 'sav-overlay';
+        badge.setAttribute('data-sav-owner', String(SAV_INSTANCE));
+        badge.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;overflow:hidden;';
+        const label = document.createElement('span');
+        label.className = 'sav-label sav-persistent';
+        badge.appendChild(label);
+        (document.body || document.documentElement).appendChild(badge);
+    }
+    // Recadrage sur le conteneur + texte
+    const r = container.getBoundingClientRect();
+    badge.style.width = r.width + 'px';
+    badge.style.height = r.height + 'px';
+    badge.style.top = r.top + 'px';
+    badge.style.left = r.left + 'px';
+    const label = badge.querySelector('.sav-label');
+    const text = `Speed ${speed}x`;
+    if (label.textContent !== text) label.textContent = text;
+    if (badge.style.display !== 'block') badge.style.display = 'block';
 }
 
-savListener(window, 'scroll', positionAllOverlays, { passive: true });
-savListener(window, 'resize', positionAllOverlays);
+// Recadre le badge global au scroll/resize (le conteneur peut bouger).
+function positionGlobalBadge() {
+    const badge = document.getElementById('sav-global');
+    if (!badge || badge.style.display === 'none') return;
+    const container = findPlayerContainer();
+    if (!container) { badge.style.display = 'none'; return; }
+    const r = container.getBoundingClientRect();
+    badge.style.width = r.width + 'px';
+    badge.style.height = r.height + 'px';
+    badge.style.top = r.top + 'px';
+    badge.style.left = r.left + 'px';
+}
+
+savListener(window, 'scroll', () => { positionAllOverlays(); positionGlobalBadge(); }, { passive: true });
+savListener(window, 'resize', () => { positionAllOverlays(); positionGlobalBadge(); });
 
 /* ================= Application de la vitesse ================= */
 
@@ -187,7 +229,7 @@ function applySpeedToAllVideos(speed, showFlash = false) {
     });
     if (changed) console.log(`Applying playback speed ${speed} to ${changed}/${videos.length} video(s)`);
     positionAllOverlays();
-    updateGlobalBadge(speed); // badge global tant qu'aucune vidéo n'existe
+    updateGlobalBadge(speed); // badge sur le lecteur tant qu'aucune vidéo visible n'existe
 }
 
 // Met à jour l'affichage de la vitesse pour une vidéo.
