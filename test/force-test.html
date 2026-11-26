@@ -36,13 +36,13 @@
 /* Simulation de browser.* minimale (même logique que test/index.html) */
 const store = { defaultSpeed: 1.0, speedStep: '0.25', forceOneX: false };
 const bgListeners = [], tabListeners = [], onChangedListeners = [];
-const clamp = s => Math.min(4, Math.max(0.25, s));
+const bclamp = s => Math.min(4, Math.max(0.25, s));
 function broadcast() { tabListeners.forEach(fn => fn({ action: 'setSpeed', speed: bg.speed })); }
 const bg = {
     speed: 1.0,
     handle(msg) {
         if (msg.action === 'setSpeed') {
-            this.speed = clamp(msg.speed);
+            this.speed = bclamp(msg.speed);
             store.defaultSpeed = this.speed;
             broadcast();
         }
@@ -68,10 +68,9 @@ window.browser = {
         onChanged: { addListener(fn) { onChangedListeners.push(fn); } }
     },
     runtime: {
-        onMessage: { addListener(fn) { bgListeners.push(fn); } },
+        onMessage: { addListener(fn) { tabListeners.push(fn); } }, // content.js = « onglet »
         sendMessage(msg, cb) {
             bgListeners.forEach(fn => fn(msg));
-            if (msg.action === 'setSpeed') broadcast();
             cb && cb({ speed: bg.speed });
             return Promise.resolve({ speed: bg.speed });
         }

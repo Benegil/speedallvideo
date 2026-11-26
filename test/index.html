@@ -43,11 +43,11 @@
    - storage.sync.set notifie onChanged (comme Firefox) ;
    - runtime.sendMessage(msg, cb) répond via callback ET renvoie une Promise. */
 const store = { defaultSpeed: 1.0, speedStep: '0.25', forceOneX: false };
-const bgListeners = [];   // listeners enregistrés par le background simulé
-const tabListeners = [];  // listeners des « onglets » (ici : content.js de cette page)
+const bgListeners = [];   // listeners du background SIMULÉ (ci-dessous)
+const tabListeners = [];  // listeners des « onglets » : content.js s'y enregistre
 let detMsgs = 0;          // messages setSpeed reçus avec fromDetection
 
-const clamp = s => Math.min(4, Math.max(0.25, s));
+const bclamp = s => Math.min(4, Math.max(0.25, s));
 function broadcast() {
     tabListeners.forEach(fn => fn({ action: 'setSpeed', speed: bg.speed }));
 }
@@ -55,7 +55,7 @@ const bg = {
     speed: 1.0, // froid : pas encore chargé le stockage (comme au rechargement d'extension)
     handle(msg, cb) {
         if (msg.action === 'setSpeed') {
-            this.speed = clamp(msg.speed);
+            this.speed = bclamp(msg.speed);
             store.defaultSpeed = this.speed;
             broadcast();
         } else if (msg.action === 'getCurrentSpeed') {
@@ -67,7 +67,7 @@ const bg = {
         this.speed = 1.0;
         setTimeout(() => {
             if (store.defaultSpeed) {
-                this.speed = clamp(store.defaultSpeed);
+                this.speed = bclamp(store.defaultSpeed);
                 broadcast();
             }
         }, 50);
@@ -93,12 +93,11 @@ window.browser = {
         onChanged: { addListener(fn) { onChangedListeners.push(fn); } }
     },
     runtime: {
-        onMessage: { addListener(fn) { bgListeners.push(fn); } },
+        onMessage: { addListener(fn) { tabListeners.push(fn); } }, // content.js tourne dans un « onglet »
         sendMessage(msg, cb) {
-            // Enregistre d'abord les listeners « background » (réponse getCurrentSpeed),
-            // puis diffuse comme un broadcast aux onglets. fromDetection est compté.
+            // Onglet → background : seuls les listeners du background sont appelés.
             bgListeners.forEach(fn => fn(msg));
-            if (msg.action === 'setSpeed') { if (msg.fromDetection) detMsgs++; broadcast(); }
+            if (msg.action === 'setSpeed' && msg.fromDetection) detMsgs++;
             cb && cb({ speed: bg.speed });
             return Promise.resolve({ speed: bg.speed });
         }
@@ -113,6 +112,9 @@ window.browser = {
 /* Le background « réel » est simulé par la même logique que background.js :
    il écoute les messages, met à jour vitesse + stockage et re-diffuse. */
 bgListeners.push(msg => bg.handle(msg));
+
+/* Charge l'extension (content.js) — après la simulation de browser.* */
+document.write('<script src="../content.js"><\/script>');
 
 /* ================= Affichage ================= */
 const v1 = document.getElementById('v1');
@@ -161,6 +163,8 @@ function render() {
 
     /* A. Rechargement de l'extension avec defaultSpeed=0.25 : la vidéo doit
        repasser à 0.25x SANS transiter par 1.0 (le background répond « froid »). */
+    browser.runtime.sendMessage({ action: 'setSpeed', speed: 2.0 }); // état de départ ≠ 1.0
+    await sleep(300);
     store.defaultSpeed = 0.25;
     bg.reload();
     let sawOne = false;
@@ -173,12 +177,17 @@ function render() {
 
     /* B. Force 1x : le site ré-assert 2x toutes les 200 ms (comme YouTube).
        La vidéo doit rester à 1.0x pendant tout le forcage. */
-    store.forceOneX = true;
+    browser.storage.sync.set({ forceOneX: true });
     const forceTimer = setInterval(() => siteSetRate(2), 200);
     await sleep(400);
-    let stayedAtOne = true;
+    // Entre l'écriture du site et notre ré-écriture (tâche suivante), un
+    // échantillon peut tomber sur 2 : on tolère un échantillon isolé, pas deux
+    // consécutifs (= le site aurait « gagné » plus de 50 ms).
+    let stayedAtOne = true, prevOff = false;
     for (let i = 0; i < 10; i++) {
-        if (Math.abs(v1.playbackRate - 1) >= 0.001) stayedAtOne = false;
+        const off = Math.abs(v1.playbackRate - 1) >= 0.001;
+        if (off && prevOff) stayedAtOne = false;
+        prevOff = off;
         await sleep(50);
     }
     clearInterval(forceTimer);
@@ -193,7 +202,7 @@ function render() {
         `bg=${bg.speed}, rate=${v1.playbackRate}`);
 
     /* D. Désactivation du forcage : la vitesse suivie (2x) est rétablie. */
-    store.forceOneX = false;
+    browser.storage.sync.set({ forceOneX: false });
     await until(() => Math.abs(v1.playbackRate - 2) < 0.001, 4000);
     await check('D — désactivation forcage : 2x rétabli',
         Math.abs(v1.playbackRate - 2) < 0.001, `rate=${v1.playbackRate}`);
@@ -233,9 +242,12 @@ function render() {
 
     /* J. Double-injection (rechargement d'extension) : une 2e instance de
        content.js s'exécute dans la même page ; l'instance obsolète doit se
-       désactiver → un seul overlay par vidéo, et le badge reste fonctionnel. */
+       désactiver → un seul overlay par vidéo, et le badge reste fonctionnel.
+       Injection en « module » pour avoir un scope propre (comme le monde isolé
+       des content scripts dans Firefox) : sinon les const globales colliseraient. */
     await new Promise(res => {
         const s = document.createElement('script');
+        s.type = 'module';
         s.src = '../content.js?reinj=' + Date.now();
         s.onload = res; s.onerror = res;
         document.head.appendChild(s);
@@ -245,7 +257,7 @@ function render() {
     const ovCount = document.querySelectorAll('.sav-overlay').length;
     const badges = [...document.querySelectorAll('.sav-label')].filter(l => l.textContent.includes('Speed'));
     await check('J — double-injection : 1 seul overlay, badge vivant',
-        ovCount === 1 && badges.length === 1 && badges[0].textContent === 'Speed 1.0x',
+        ovCount === 1 && badges.length === 1 && badges[0].textContent === 'Speed 1x',
         `overlays=${ovCount}, labels=${badges.map(b => b.textContent).join('|')}`);
 
     const ok = results.every(r => r.ok);

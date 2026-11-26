@@ -8,6 +8,7 @@ let force1x = false;  // option « Force 1x »
 let ready = false;    // stockage chargé : avant ça, on n'écrase rien (fix rechargement → 1x)
 let lastSet = 1.0;    // dernière vitesse posée par nous (anti-écho de la détection)
 let lastForced = null;// dernière vitesse du site lue pendant le forcage
+let neutral = true;   // aucune vitesse encore choisie (1re install) : on n'écrit RIEN sur les vidéos
 
 const clamp = s => Math.min(MAX, Math.max(MIN, s));
 const round2 = s => Math.round(s * 100) / 100;
@@ -18,8 +19,11 @@ const visible = el => { const r = el.getBoundingClientRect(); return r.width > 0
    onglets déjà ouverts SANS tuer l'ancienne instance : deux overlays
    cohabiteraient (le « fantôme » figé sur la vitesse du moment). L'instance
    active se marque sur <html> ; les instances obsolètes s'éteignent seules. */
-const ME = Symbol('sav');
-document.documentElement.setAttribute('data-sav-active', String(ME));
+// Marqueur déjà présent = ré-injection (rechargement d'extension) : la vitesse
+// actuelle des vidéos vient alors de NOUS, pas du site.
+const REINJ = document.documentElement.hasAttribute('data-sav-active');
+const ME = Math.random().toString(36).slice(2); // marqueur UNIQUE par instance (pas Symbol : deux Symbol('sav') s'afficheraient pareils)
+document.documentElement.setAttribute('data-sav-active', ME);
 
 const timers = [];
 const subs = [];
@@ -88,8 +92,10 @@ if (!document.getElementById('sav-style')) {
 /* ---------- Overlays par vidéo ---------- */
 function overlayOf(v) {
     let o = v._savOverlay;
+    if (o && !o.isConnected) o = null; // supprimé (orphelin) : on en recrée un
     if (o && o.getAttribute('data-sav-owner') !== String(ME)) { // hérité d'une instance morte : repris en propre
         o.setAttribute('data-sav-owner', String(ME));
+        o._savVideo = v;
         v._savLabel = o.querySelector('.sav-label');
     }
     if (!o) {
@@ -103,6 +109,7 @@ function overlayOf(v) {
         (document.body || document.documentElement).appendChild(o);
         v._savOverlay = o;
         v._savLabel = l;
+        o._savVideo = v; // lien retour : l'overlay meurt avec sa vidéo (cf. fitAll)
     }
     return o;
 }
@@ -118,7 +125,18 @@ function fit(v) { // recadre l'overlay sur sa vidéo
 }
 
 function fitAll() {
-    document.getElementsByTagName('video').forEach(v => { if (v._savOverlay) fit(v); });
+    // Overlays orphelins : le site (YouTube : aperçus au survol, miniplayer,
+    // navigation) retire ou remplace ses <video>, mais l'overlay est dans
+    // <body> → il restait figé avec l'ancienne vitesse (« Speed » en double au
+    // défilement). On le supprime dès que sa vidéo n'est plus dans le document.
+    document.querySelectorAll('.sav-overlay').forEach(o => {
+        if (o.id === 'sav-global' || o.getAttribute('data-sav-owner') !== String(ME)) return;
+        const v = o._savVideo;
+        if (v && v.isConnected && v._savOverlay === o) return;
+        if (v && v._savOverlay === o) { v._savOverlay = null; v._savLabel = null; }
+        o.remove();
+    });
+    Array.from(document.getElementsByTagName('video')).forEach(v => { if (v._savOverlay) fit(v); });
 }
 
 /* ---------- Badge global (aucune vidéo visible, mais un lecteur connu) ----------
@@ -185,26 +203,29 @@ function globalBadge(spd) {
     if (b.style.display !== 'block') b.style.display = 'block';
 }
 
-function placeBadge() { // recadrage au scroll/resize
-    const b = document.getElementById('sav-global');
-    if (!b || b.style.display === 'none') return;
-    const box = findPlayer();
-    if (!box) { b.style.display = 'none'; return; }
-    const r = box.getBoundingClientRect();
-    b.style.width = r.width + 'px';
-    b.style.height = r.height + 'px';
-    b.style.top = r.top + 'px';
-    b.style.left = r.left + 'px';
-}
-
-on(window, 'scroll', () => { fitAll(); placeBadge(); }, { passive: true });
-on(window, 'resize', () => { fitAll(); placeBadge(); });
+// globalBadge (pas un simple recadrage) : il se masque si une vidéo
+// visible a pris le relais, sinon deux « Speed » s'affichaient au défilement.
+on(window, 'scroll', () => { fitAll(); globalBadge(lastSet); }, { passive: true });
+on(window, 'resize', () => { fitAll(); globalBadge(lastSet); });
 
 /* ---------- Application de la vitesse ---------- */
 function setRate(v, s) {
+    // On écrit TOUJOURS (même si déjà à cette valeur) : sinon l'événement
+    // ratechange ne se déclenche pas et le lecteur du site ne met pas à jour
+    // son état interne — ex : YouTube affichait alors dans son menu de vitesse
+    // sa dernière valeur (0.55) au lieu de la nôtre (1x).
     if (v.playbackRate !== s) {
         try { v.playbackRate = s; return true; }
         catch (e) { console.error(`SpeedAllVideo : playbackRate ${s} refusé`, e); }
+    } else {
+        // Valeur déjà posée : on ré-affirme avec une écriture « aller-retour »
+        // (le navigateur n'émet pas d'événement pour une écriture identique).
+        // v._savHold : nos propres écritures instantanées ne sont pas
+        // « vitesse du site » (sinon le hook ratechange suivrait le 1.01).
+        v._savHold = true;
+        try { v.playbackRate = Math.min(MAX, s + 0.01); v.playbackRate = s; }
+        catch (e) {}
+        v._savHold = false;
     }
     return false;
 }
@@ -234,8 +255,11 @@ function show(v, s, flash) { // badge d'une vidéo : TOUJOURS visible (même à 
 function apply(spd, flash = false) {
     const videos = document.getElementsByTagName('video');
     let changed = 0;
+    const passive = neutral && !force1x; // neutre : on affiche sans écrire
     Array.from(videos).forEach(v => {
+        if (passive) { hookRate(v); show(v, round2(v.playbackRate), flash); return; }
         if (setRate(v, spd)) changed++;
+        hookRate(v); // réaction immédiate si le site change la vitesse pendant un forcage
         show(v, spd, flash);
     });
     lastSet = spd; // nos écritures ne doivent pas être « reprises » par la détection
@@ -244,46 +268,80 @@ function apply(spd, flash = false) {
     globalBadge(spd);
 }
 
+/* ---------- Vitesse choisie par le site ----------
+   Mémorise la vitesse posée par le lecteur (YouTube…) pour la restaurer à la
+   désactivation de Force 1x. Appelé par le hook ratechange (immédiat) et par
+   trackForced (boucle 1 s, filet). Nos propres écritures (lastSet) sont
+   ignorées pour éviter les allers-retours. */
+function noteSiteRate(r) {
+    if (Math.abs(r - lastSet) < 0.001) return;
+    if (lastForced === null || Math.abs(r - lastForced) >= 0.001) {
+        speed = r;
+        console.log(`SpeedAllVideo : vitesse du site suivie → ${speed}x`);
+        browser.runtime.sendMessage({ action: 'setSpeed', speed, fromDetection: true }).catch(() => {});
+    }
+    lastForced = r;
+}
+
+/* Pendant le forcage 1x, le site (YouTube…) peut ré-asserter sa vitesse à tout
+   moment ; la boucle de 1 s serait trop lente → on ré-applique immédiatement
+   via l'événement ratechange. Nos propres écritures (à 1.0) ne déclenchent rien. */
+function hookRate(v) {
+    if (v._savRC === ME) return;
+    if (v._savRCFn) v.removeEventListener('ratechange', v._savRCFn);
+    v._savRCFn = () => {
+        if (dead || !force1x || v._savHold) return;
+        if (Math.abs(v.playbackRate - 1) < 0.001) return; // notre propre écriture 1.0 → pas de boucle
+        let rate = v.playbackRate;
+        try { rate = v.getPlaybackRate ? v.getPlaybackRate() : rate; } catch (e) {}
+        noteSiteRate(round2(rate));
+        // On ré-écrase APRÈS la fin de l'événement en cours : une écriture
+        // synchrone serait annulée par le navigateur (la valeur posée par le
+        // site n'est pas encore « engagée » pendant son propre ratechange).
+        const t = setTimeout(() => { if (!dead && force1x) apply(1.0); }, 0);
+        timers.push(t);
+    };
+    v._savRC = ME;
+    on(v, 'ratechange', v._savRCFn);
+}
+
 /* ---------- Détection de la vitesse choisie dans le lecteur du site ----------
    L'utilisateur change la vitesse depuis le menu du site (YouTube…) : on suit
    cette valeur, c'est elle qui sera restaurée à la désactivation de Force 1x.
-   On ignore nos propres écritures (lastSet) pour éviter les allers-retours. */
+   On ignore nos propres écritures récentes (lastSet) pour éviter les
+   allers-retours. Renvoie la vitesse à appliquer : celle détectée si le site
+   en a posé une, sinon lastSet — jamais l'ancienne valeur mémoire qui
+   écraserait un changement clavier encore frais. */
 function detect() {
     for (const v of Array.from(document.getElementsByTagName('video'))) {
         if (!visible(v)) continue;
         let rate = v.playbackRate;
         try { rate = v.getPlaybackRate ? v.getPlaybackRate() : rate; } catch (e) {}
-        if (v.seeking || v.paused) continue; // YouTube force 1x pendant un seek : états instables
+        if (v.seeking) continue; // YouTube force 1x pendant un seek : état instable
         const r = round2(rate);
-        if (Math.abs(r - lastSet) < 0.001) return; // on n'écrase pas ce qu'on vient de poser
+        // Notre propre valeur posée récemment → pas de re-détection. Au-delà
+        // de la fenêtre, une même valeur lue est considérée comme venue du site.
+        if (Math.abs(r - lastSet) < 0.001) return lastSet; // notre propre valeur : rien à détecter
         if (r >= MIN && r <= MAX) {
             speed = r;
+            neutral = false; // le site a choisi : on suit désormais
             console.log(`SpeedAllVideo : vitesse réelle détectée ${speed}x`);
             browser.runtime.sendMessage({ action: 'setSpeed', speed, fromDetection: true }).catch(() => {});
         }
-        return; // une seule vidéo de référence par cycle
+        return r; // la boucle l'applique (une seule écriture par cycle)
     }
+    return lastSet;
 }
 
-// Pendant le forcage 1x, la vitesse choisie dans le lecteur (ex : 2x) est
-// écrasée avant qu'on puisse la lire : on lit ce que le site a posé AVANT de
-// réappliquer 1x, et si ça change → l'utilisateur a touché au menu du site →
-// on mémorise pour restaurer à la désactivation. Nos écritures (1x) sont
-// ignorées via lastSet.
+// Filet de la boucle : le hook ratechange gère déjà l'instantané ; ici on
+// capture seulement ce que le site aurait posé sans événement (rare).
 function trackForced() {
     for (const v of Array.from(document.getElementsByTagName('video'))) {
         if (!visible(v)) continue;
         let rate = v.playbackRate;
         try { rate = v.getPlaybackRate ? v.getPlaybackRate() : rate; } catch (e) {}
-        const r = round2(rate);
-        if (Math.abs(r - lastSet) < 0.001) return;
-        if (lastForced === null || Math.abs(r - lastForced) >= 0.001) {
-            speed = r;
-            console.log(`SpeedAllVideo : vitesse du site suivie pendant forcage → ${speed}x`);
-            browser.runtime.sendMessage({ action: 'setSpeed', speed, fromDetection: true }).catch(() => {});
-        }
-        lastForced = r;
-        return;
+        noteSiteRate(round2(rate));
+        return; // une seule vidéo de référence par cycle
     }
 }
 
@@ -293,7 +351,7 @@ function trackForced() {
 iv(() => {
     if (!ready) return;
     if (force1x) { trackForced(); apply(1.0); }
-    else { detect(); apply(speed); }
+    else apply(detect()); // détection + application : une seule écriture par cycle
 }, 1000);
 
 // MutationObserver : capture les vidéos ajoutées dynamiquement. On ignore nos
@@ -301,7 +359,13 @@ iv(() => {
 // ne pas réappliquer à chaque mutation isolée sur une page animée.
 let pending = false;
 const obs = new MutationObserver(ms => {
-    const relevant = ms.some(m => !(m.target instanceof Element && m.target.closest('.sav-overlay')));
+    // Seul l'AJOUT d'une vidéo compte : une page qui mute sans arrêt (YouTube,
+    // compteurs…) ré-appliquerait sinon `speed` en boucle et écraserait la
+    // vitesse que le site vient de poser avant que detect() ne la lise.
+    const hasVideo = n => n.nodeType === 1 && !(n.classList && n.classList.contains('sav-overlay')) &&
+        (n.tagName === 'VIDEO' || n.getElementsByTagName('video').length);
+    if (ms.some(m => Array.from(m.removedNodes).some(hasVideo))) fitAll(); // vidéo retirée → overlay orphelin nettoyé
+    const relevant = ms.some(m => Array.from(m.addedNodes).some(n => hasVideo(n) && !n.closest('.sav-overlay')));
     if (!relevant || pending) return;
     pending = true;
     requestAnimationFrame(() => {
@@ -313,8 +377,10 @@ obs.observe(document.body, { childList: true, subtree: true });
 
 /* ---------- Messages du background ---------- */
 browser.runtime.onMessage.addListener(msg => {
+    if (dead) return; // instance obsolète (rechargement d'extension)
     if (msg && msg.action === 'setSpeed') {
         speed = msg.speed;
+        neutral = false; // une vitesse a été choisie (ici ou dans un autre onglet)
         // Pendant le forcage 1x : mise à jour SANS application (la boucle gère
         // l'affichage, la vidéo reste à 1.0x). fromDetection : écho de notre
         // propre détection → silencieux (pas de flash).
@@ -333,12 +399,27 @@ browser.storage.sync.get(['forceOneX', 'speedStep', 'defaultSpeed']).then(res =>
     const s = parseFloat(res.speedStep);
     if (s > 0 && s <= MAX) step = s;
     if (res.defaultSpeed) speed = clamp(res.defaultSpeed);
+    // 1re install (aucune vitesse mémorisée) : neutre, on ne force pas 1x.
+    neutral = !res.defaultSpeed && !force1x;
+    // Chargement de page : si le site a DÉJÀ posé sa vitesse (YouTube restaure
+    // la sienne, ex : 0.25x), on l'adopte au lieu de l'écraser avec la mémoire.
+    if (!REINJ && !force1x) {
+        const v = Array.from(document.getElementsByTagName('video'))
+            .find(v => Math.abs(v.playbackRate - 1) >= 0.001 && v.playbackRate >= MIN && v.playbackRate <= MAX);
+        if (v && Math.abs(round2(v.playbackRate) - speed) >= 0.001) {
+            speed = round2(v.playbackRate);
+            console.log(`SpeedAllVideo : vitesse du site au chargement conservée → ${speed}x`);
+            browser.runtime.sendMessage({ action: 'setSpeed', speed, fromDetection: true }).catch(() => {});
+        }
+    }
     apply(force1x ? 1.0 : speed); // pas de flash au chargement
     ready = true;
 });
 setTimeout(() => { ready = true; }, 1500); // filet si le stockage échoue
 
-on(browser.storage.onChanged, 'onChanged', changes => {
+/* onChanged est un objet WebExtension (addListener), pas un EventTarget : */
+browser.storage.onChanged.addListener(changes => {
+    if (dead) return; // instance obsolète (rechargement d'extension)
     if (changes.forceOneX) {
         force1x = !!changes.forceOneX.newValue;
         // Activation → 1.0x immédiatement ; désactivation → vitesse suivie rétablie sans attendre le tick.
@@ -360,6 +441,7 @@ function typing(el) {
 }
 
 on(document, 'keydown', e => {
+    if (dead) return; // instance obsolète (rechargement d'extension)
     if (e.ctrlKey || e.altKey || e.metaKey) return;
     if (typing(e.target)) return;
     let next = null;
@@ -370,10 +452,12 @@ on(document, 'keydown', e => {
         default: return;
     }
     e.preventDefault();
+    neutral = false;
     browser.runtime.sendMessage({ action: 'setSpeed', speed: next }); // le background re-diffuse à tous les onglets
+    apply(next, true); // on pose la valeur MAINTENANT : sinon la boucle la verrait comme « posée par le site »
 }, true);
 
 /* Re-apply quand l'onglet redevient visible */
 on(document, 'visibilitychange', () => {
-    if (!document.hidden) apply(force1x ? 1.0 : speed);
+    if (!dead && !document.hidden) apply(force1x ? 1.0 : speed);
 });

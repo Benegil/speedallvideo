@@ -3,6 +3,7 @@ const MIN = 0.25;
 const MAX = 4;
 
 let speed = 1.0;   // vitesse courante (partagée par tous les onglets)
+let chosen = false; // une vitesse a-t-elle déjà été choisie ? (sinon : neutre, 1re install)
 let iconSpeed = 1; // lue à chaque image de l'animation → suit les changements en direct
 
 const clamp = s => Math.min(MAX, Math.max(MIN, s));
@@ -77,6 +78,7 @@ function broadcast() {
 browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.action === 'setSpeed') {
         speed = clamp(msg.speed);
+        chosen = true;
         broadcast();
         browser.storage.sync.set({ defaultSpeed: speed });
         iconSpeed = round2(speed);
@@ -91,6 +93,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 browser.storage.sync.get('defaultSpeed').then(res => {
     if (res.defaultSpeed) {
         speed = clamp(res.defaultSpeed);
+        chosen = true;
         broadcast();
     }
     iconSpeed = round2(speed);
@@ -99,5 +102,6 @@ browser.storage.sync.get('defaultSpeed').then(res => {
 
 /* Vitesse initiale pour les nouveaux onglets */
 browser.tabs.onCreated.addListener(tab => {
+    if (!chosen) return; // 1re install : pas de 1x imposé aux nouveaux onglets
     browser.tabs.sendMessage(tab.id, { action: 'setSpeed', speed }).catch(() => {});
 });
