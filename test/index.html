@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SpeedAllVideo — Page de test</title>
+<style>
+  body { font-family: sans-serif; margin: 2rem; background: #1e1e1e; color: #eee; }
+  video { width: 480px; max-width: 100%; display: block; margin-bottom: 1.5rem; }
+  .card { background: #2a2a2a; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; }
+  .rate { font-size: 1.4rem; font-weight: bold; color: #7ec8ff; }
+  button { padding: .5rem 1rem; font-size: 1rem; cursor: pointer; }
+  h1 { font-size: 1.3rem; }
+</style>
+</head>
+<body>
+<h1>Page de test SpeedyVideo</h1>
+
+<div class="card">
+  <p><strong>Vidéo 1</strong> (statique, présente au chargement) — vitesse actuelle : <span class="rate" id="r1">?</span>x</p>
+  <video id="v1" controls src="video.mp4"></video>
+</div>
+
+<div class="card">
+  <p><strong>Vidéo 2</strong> (chargée dynamiquement après 3 s) — vitesse actuelle : <span class="rate" id="r2">?</span>x</p>
+  <div id="slot2"><em>en attente…</em></div>
+</div>
+
+<div class="card">
+  <button id="toggle">Pause / Lecture (vidéo 1)</button>
+</div>
+
+<script>
+function showRates() {
+  const v1 = document.getElementById('v1');
+  const r1 = document.getElementById('r1');
+  if (v1) r1.textContent = v1.playbackRate.toFixed(2);
+  const v2 = document.querySelector('#slot2 video');
+  const r2 = document.getElementById('r2');
+  if (v2) r2.textContent = v2.playbackRate.toFixed(2);
+}
+setInterval(showRates, 300);
+
+// Vidéo 2 : ajoutée dynamiquement pour tester le MutationObserver
+setTimeout(() => {
+  const slot = document.getElementById('slot2');
+  slot.innerHTML = '';
+  const v = document.createElement('video');
+  v.id = 'v2';
+  v.controls = true;
+  v.src = 'video.mp4';
+  slot.appendChild(v);
+}, 3000);
+
+document.getElementById('toggle').addEventListener('click', () => {
+  const v1 = document.getElementById('v1');
+  v1.paused ? v1.play() : v1.pause();
+});
+</script>
+</body>
+</html>
