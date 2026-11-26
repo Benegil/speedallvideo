@@ -72,15 +72,9 @@ function stopIconAnim() {
 
 async function updateActionIcon() {
     const speed = Math.round(currentSpeed * 100) / 100;
-    if (speed === 1.0) {
-        // Vitesse normale : X simple, pas d'animation
-        stopIconAnim();
-        await browser.browserAction.setIcon({ path: { 32: 'icon32.png', 48: 'icon48.png' } });
-        return;
-    }
     const label = `${speed}x`;
     if (label.length <= 2) {
-        // "2x", "4x"… : icône statique, pas de défilement.
+        // "1x", "2x", "4x"… : icône statique, pas de défilement.
         stopIconAnim();
         try {
             await browser.browserAction.setIcon({
