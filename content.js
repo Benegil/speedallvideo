@@ -157,14 +157,9 @@ function applySpeedToAllVideos(speed, showFlash = false) {
 }
 
 // Met à jour l'affichage de la vitesse pour une vidéo.
+// Le badge est TOUJOURS visible (même à 1x) : dans un nouvel onglet on sait
+// immédiatement à quelle vitesse tourne la vidéo.
 function updateLabel(video, speed, flash) {
-    if (speed === 1) {
-        // Vitesse normale : pas d'overlay du tout (zéro coût DOM/layout)
-        if (video._savOverlay && video._savOverlay.style.display !== 'none') {
-            video._savOverlay.style.display = 'none';
-        }
-        return;
-    }
     const overlay = getOverlay(video);
     const label = video._savLabel;
     const text = `Speed ${speed}x`;
