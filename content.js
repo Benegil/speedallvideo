@@ -362,32 +362,3 @@ savListener(document, 'visibilitychange', () => {
     }
 });
 
-/* ================= MARQUEUR DE TEST (temporaire) =================
-   À la fin du chargement d'une page avec un lecteur visible mais sans <video>
-   (ex : YouTube avant Play), affiche en GROS au centre du lecteur « SpeedAllVideo
-   chargé ✓ » pendant 6 s. Sert à vérifier que le script est bien rechargé et
-   que le conteneur est détecté. */
-(function testMarker() {
-    const tick = () => {
-        if (_savDead) return;
-        const container = findPlayerContainer();
-        if (!container) { savInterval(tick, 250); return; }
-        // Mêmes critères que updateGlobalBadge : vidéo visible SAUF overlay de vignette.
-        const hasVideo = !cuedOverlayVisible() && Array.from(document.getElementsByTagName('video')).some(v => {
-            const r = v.getBoundingClientRect();
-            return r.width > 0 && r.height > 0;
-        });
-        if (hasVideo) { console.log('[SAV test] vidéo visible, marqueur inutile'); return; }
-        console.log('[SAV test] conteneur trouvé:', container.id || container.className,
-                    '| vitesse courante:', currentSpeed);
-        const m = document.createElement('div');
-        m.textContent = 'SpeedAllVideo chargé ✓';
-        m.style.cssText = 'position:fixed;z-index:2147483647;pointer-events:none;display:flex;align-items:center;justify-content:center;font-family:sans-serif;font-size:42px;font-weight:800;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.9);';
-        const r = container.getBoundingClientRect();
-        m.style.top = r.top + 'px'; m.style.left = r.left + 'px';
-        m.style.width = r.width + 'px'; m.style.height = r.height + 'px';
-        (document.body || document.documentElement).appendChild(m);
-        setTimeout(() => m.remove(), 6000);
-    };
-    tick(); // vérifie immédiatement, puis se réenregistre tant que pas de conteneur
-})();
