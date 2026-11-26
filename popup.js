@@ -1,90 +1,64 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const slider = document.getElementById('speedSlider');
-    const speedDisplay = document.getElementById('currentSpeed');
-    const minusBtn = document.getElementById('minusBtn');
-    const plusBtn = document.getElementById('plusBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const statusEl = document.getElementById('status');
-    const presetBtns = document.querySelectorAll('.preset-btn');
+/* SpeedAllVideo — popup : vitesse courante, slider, presets, reset */
+document.addEventListener('DOMContentLoaded', () => {
+    const $ = id => document.getElementById(id);
+    const speedEl = $('speed');
+    const slider = $('slider');
+    const status = $('status');
+    const presets = [...document.querySelectorAll('.preset')];
 
-    const MIN_SPEED = 0.25;
-    const MAX_SPEED = 4;
-    let STEP = 0.25; // pas de réglage, chargé depuis le stockage
+    const MIN = 0.25;
+    const MAX = 4;
+    let step = 0.25; // pas de réglage (options)
+    let current = 1.0;
 
-    function clampSpeed(s) {
-        return Math.min(MAX_SPEED, Math.max(MIN_SPEED, s));
+    const clamp = s => Math.min(MAX, Math.max(MIN, s));
+    const round2 = s => Math.round(s * 100) / 100;
+
+    function render() {
+        speedEl.textContent = current.toFixed(2) + 'x';
+        slider.value = current;
+        presets.forEach(b => b.classList.toggle('active', Math.abs(parseFloat(b.dataset.speed) - current) < 0.001));
     }
 
-    // Le pas est celui défini dans les options (stockage sync).
-    browser.storage.sync.get('speedStep').then(result => {
-        const step = parseFloat(result.speedStep);
-        if (step > 0 && step <= MAX_SPEED) {
-            STEP = step;
-            slider.step = String(step);
+    function flash(msg, ms) {
+        status.textContent = msg;
+        setTimeout(() => { status.textContent = ''; }, ms);
+    }
+
+    function setSpeed(s) {
+        current = round2(clamp(s));
+        render();
+        browser.runtime.sendMessage({ action: 'setSpeed', speed: current });
+        flash('✓ Speed updated', 750);
+    }
+
+    // Pas de réglage depuis le stockage (pilote les boutons ± et le slider)
+    browser.storage.sync.get('speedStep').then(res => {
+        const s = parseFloat(res.speedStep);
+        if (s > 0 && s <= MAX) {
+            step = s;
+            slider.step = String(s);
         }
     });
 
-    function updateDisplay(speed) {
-        speedDisplay.textContent = speed.toFixed(2) + 'x';
-        slider.value = speed;
-        presetBtns.forEach(btn => {
-            const val = parseFloat(btn.dataset.speed);
-            btn.classList.toggle('active', Math.abs(val - speed) < 0.001);
-        });
-    }
-
-    function setStatus(msg, duration) {
-        statusEl.textContent = msg;
-        if (duration) {
-            setTimeout(() => { statusEl.textContent = ''; }, duration);
-        }
-    }
-
-    function setSpeed(speed) {
-        speed = clampSpeed(speed);
-        // Arrondi à 2 décimales : évite les erreurs flottantes (0.30000000000000004…)
-        speed = Math.round(speed * 100) / 100;
-        updateDisplay(speed);
-        browser.runtime.sendMessage({ action: 'setSpeed', speed: speed });
-        setStatus('✓ Speed updated', 750);
-    }
-
-    // Charger la vitesse actuelle depuis le background script
-    browser.runtime.sendMessage({ action: 'getCurrentSpeed' }, (response) => {
-        if (response && response.speed) {
-            updateDisplay(response.speed);
+    // Vitesse actuelle depuis le background
+    browser.runtime.sendMessage({ action: 'getCurrentSpeed' }, res => {
+        if (res && res.speed) {
+            current = res.speed;
+            render();
         }
     });
 
-    // Slider
-    slider.addEventListener('input', function() {
-        setSpeed(parseFloat(this.value));
-    });
+    slider.addEventListener('input', () => setSpeed(parseFloat(slider.value)));
 
-    // Boutons +/-
-    minusBtn.addEventListener('click', () => {
-        browser.runtime.sendMessage({ action: 'getCurrentSpeed' }, (response) => {
-            const current = response && response.speed ? response.speed : 1;
-            setSpeed(current - STEP);
-        });
-    });
+    $('minus').addEventListener('click', () => setSpeed(current - step));
+    $('plus').addEventListener('click', () => setSpeed(current + step));
 
-    plusBtn.addEventListener('click', () => {
-        browser.runtime.sendMessage({ action: 'getCurrentSpeed' }, (response) => {
-            const current = response && response.speed ? response.speed : 1;
-            setSpeed(current + STEP);
-        });
-    });
+    presets.forEach(b => b.addEventListener('click', () => setSpeed(parseFloat(b.dataset.speed))));
 
-    // Boutons presets
-    presetBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            setSpeed(parseFloat(btn.dataset.speed));
-        });
-    });
-
-    // Reset
-    resetBtn.addEventListener('click', () => {
+    // Reset : retour à l'état « rien de forcé » — vitesse 1x ET Force 1x désactivé.
+    $('reset').addEventListener('click', () => {
         setSpeed(1.0);
+        browser.storage.sync.set({ forceOneX: false });
     });
 });

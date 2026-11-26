@@ -1,134 +1,102 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const slider = document.getElementById('speedSlider');
-    const speedDisplay = document.getElementById('currentSpeed');
-    const minusBtn = document.getElementById('minusBtn');
-    const plusBtn = document.getElementById('plusBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const statusEl = document.getElementById('status');
-    const presetBtns = document.querySelectorAll('.preset-btn');
-    const stepInput = document.getElementById('speedStep');
-    const forceOneX = document.getElementById('forceOneX');
-    const slowDesc = document.getElementById('slowDesc');
-    const fastDesc = document.getElementById('fastDesc');
+/* SpeedAllVideo — options : vitesse, pas de réglage (Speed Step), Force 1x */
+document.addEventListener('DOMContentLoaded', () => {
+    const $ = id => document.getElementById(id);
+    const speedEl = $('speed');
+    const slider = $('slider');
+    const stepInput = $('stepInput');
+    const forceOneX = $('forceOneX');
+    const status = $('status');
+    const presets = [...document.querySelectorAll('.preset')];
 
-    const MIN_SPEED = 0.25;
-    const MAX_SPEED = 4;
-    let STEP = 0.25; // pas de réglage, chargé depuis le stockage
+    const MIN = 0.25;
+    const MAX = 4;
+    let step = 0.25; // pas de réglage
+    let current = 1.0;
 
-    function clampSpeed(s) {
-        return Math.min(MAX_SPEED, Math.max(MIN_SPEED, s));
+    const clamp = s => Math.min(MAX, Math.max(MIN, s));
+    const round2 = s => Math.round(s * 100) / 100;
+
+    function render() {
+        speedEl.textContent = current.toFixed(2) + 'x';
+        slider.value = current;
+        presets.forEach(b => b.classList.toggle('active', Math.abs(parseFloat(b.dataset.speed) - current) < 0.001));
     }
 
-    function fmtStep(v) {
-        return (Math.round(v * 100) / 100).toString();
+    function flash(msg, ms) {
+        status.textContent = msg;
+        setTimeout(() => { status.textContent = ''; }, ms);
     }
 
-    // Applique le pas à tout ce qui en dépend : slider, boutons ±, texte des raccourcis.
-    function applyStep(step) {
-        STEP = step;
-        slider.step = String(step);
-        if (slowDesc) slowDesc.textContent = `Slow down (−${fmtStep(step)}x)`;
-        if (fastDesc) fastDesc.textContent = `Speed up (+${fmtStep(step)}x)`;
+    function setSpeed(s) {
+        current = round2(clamp(s));
+        render();
+        browser.runtime.sendMessage({ action: 'setSpeed', speed: current });
+        flash('✓ Speed updated', 750);
     }
 
-    function updateDisplay(speed) {
-        speedDisplay.textContent = speed.toFixed(2) + 'x';
-        slider.value = speed;
-        // Mettre à jour le bouton actif des presets
-        presetBtns.forEach(btn => {
-            const val = parseFloat(btn.dataset.speed);
-            btn.classList.toggle('active', Math.abs(val - speed) < 0.001);
-        });
-    }
-
-    function setStatus(msg, duration) {
-        statusEl.textContent = msg;
-        if (duration) {
-            setTimeout(() => { statusEl.textContent = ''; }, duration);
+    // Le pas pilote les boutons ±, le slider ET les descriptions S/D.
+    function applyStep() {
+        const s = parseFloat(stepInput.value);
+        if (s > 0 && s <= MAX) {
+            step = round2(s);
+            slider.step = String(step);
+            $('slowDesc').textContent = `Slow down (−${step}x)`;
+            $('fastDesc').textContent = `Speed up (+${step}x)`;
         }
     }
 
-    function setSpeed(speed) {
-        speed = clampSpeed(speed);
-        // Arrondi à 2 décimales : évite les erreurs flottantes (0.30000000000000004…)
-        speed = Math.round(speed * 100) / 100;
-        updateDisplay(speed);
-        browser.runtime.sendMessage({ action: 'setSpeed', speed: speed });
-        setStatus('✓ Speed updated', 750);
-    }
-
-    // Charger la vitesse actuelle et le pas depuis le background / stockage
-    browser.runtime.sendMessage({ action: 'getCurrentSpeed' }, (response) => {
-        if (response && response.speed) {
-            updateDisplay(response.speed);
+    // Chargement initial depuis le stockage sync (lu par les content scripts)
+    browser.storage.sync.get(['speedStep', 'forceOneX']).then(res => {
+        if (res.speedStep !== undefined && res.speedStep !== '') {
+            stepInput.value = res.speedStep;
+            applyStep();
         }
+        forceOneX.checked = !!res.forceOneX;
     });
-    browser.storage.sync.get('speedStep').then(result => {
-        const step = parseFloat(result.speedStep);
-        if (step > 0 && step <= MAX_SPEED) {
-            applyStep(step);
-            stepInput.value = fmtStep(step);
-        } else {
-            applyStep(0.25);
+
+    // Vitesse actuelle depuis le background
+    browser.runtime.sendMessage({ action: 'getCurrentSpeed' }, res => {
+        if (res && res.speed) {
+            current = res.speed;
+            render();
         }
     });
 
-    // Force 1x : coché si l'option est active dans le stockage
-    browser.storage.sync.get('forceOneX').then(result => {
-        forceOneX.checked = !!result.forceOneX;
-    });
+    slider.addEventListener('input', () => setSpeed(parseFloat(slider.value)));
 
-    // Slider
-    slider.addEventListener('input', function() {
-        setSpeed(parseFloat(this.value));
-    });
+    $('minus').addEventListener('click', () => setSpeed(current - step));
+    $('plus').addEventListener('click', () => setSpeed(current + step));
 
-    // Boutons +/- (utilisent le pas de réglage)
-    minusBtn.addEventListener('click', () => {
-        browser.runtime.sendMessage({ action: 'getCurrentSpeed' }, (response) => {
-            const current = response && response.speed ? response.speed : 1;
-            setSpeed(current - STEP);
-        });
-    });
+    presets.forEach(b => b.addEventListener('click', () => setSpeed(parseFloat(b.dataset.speed))));
 
-    plusBtn.addEventListener('click', () => {
-        browser.runtime.sendMessage({ action: 'getCurrentSpeed' }, (response) => {
-            const current = response && response.speed ? response.speed : 1;
-            setSpeed(current + STEP);
-        });
-    });
-
-    // Boutons presets
-    presetBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            setSpeed(parseFloat(btn.dataset.speed));
-        });
-    });
-
-    // Reset
-    resetBtn.addEventListener('click', () => {
-        setSpeed(1.0);
-    });
-
-    // Champ du pas : l'utilisateur peut taper 0.10, 0.25, 0.5…
+    // Pas de vitesse : commit au blur, à la validation (Enter) ou après 1 s sans frappe.
+    let t;
     function commitStep() {
-        let step = parseFloat(stepInput.value);
-        if (isNaN(step) || step <= 0) step = 0.25;
-        if (step > MAX_SPEED) step = MAX_SPEED;
-        step = Math.round(step * 100) / 100;
-        applyStep(step);
-        stepInput.value = fmtStep(step);
-        browser.storage.sync.set({ speedStep: step });
-        setStatus('✓ Step updated', 750);
+        const v = parseFloat(stepInput.value);
+        if (!(v > 0 && v <= MAX)) {
+            stepInput.value = String(step); // invalide → on restaure l'ancienne valeur
+            flash('Invalid step (use 0.01 – 4)', 1200);
+            return;
+        }
+        browser.storage.sync.set({ speedStep: String(v) });
+        applyStep();
+        flash('✓ Speed Step saved', 750);
     }
-    stepInput.addEventListener('change', commitStep);
-    stepInput.addEventListener('keydown', (e) => {
+    stepInput.addEventListener('blur', commitStep);
+    stepInput.addEventListener('input', () => { clearTimeout(t); t = setTimeout(commitStep, 1000); });
+    stepInput.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); commitStep(); }
     });
 
     // Force 1x : sauvegarde dans le stockage sync (lu par les content scripts)
     forceOneX.addEventListener('change', () => {
         browser.storage.sync.set({ forceOneX: forceOneX.checked });
-        setStatus(forceOneX.checked ? '✓ Force 1x enabled' : 'Force 1x disabled', 750);
+        flash(forceOneX.checked ? '✓ Force 1x enabled' : 'Force 1x disabled', 750);
+    });
+
+    // Reset : retour à l'état « rien de forcé » — vitesse 1x ET Force 1x désactivé.
+    $('reset').addEventListener('click', () => {
+        setSpeed(1.0);
+        browser.storage.sync.set({ forceOneX: false });
     });
 });

@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>SpeedAllVideo — Page de test</title>
+<title>SpeedAllVideo — Tests automatiques (10 scénarios)</title>
 <style>
   body { font-family: sans-serif; margin: 2rem; background: #1e1e1e; color: #eee; }
   video { width: 480px; max-width: 100%; display: block; margin-bottom: 1.5rem; }
@@ -10,51 +10,247 @@
   .rate { font-size: 1.4rem; font-weight: bold; color: #7ec8ff; }
   button { padding: .5rem 1rem; font-size: 1rem; cursor: pointer; }
   h1 { font-size: 1.3rem; }
+  #results { list-style: none; }
+  #results li { padding: .25rem 0; font-weight: bold; }
+  .ok { color: #5cdb7a; }
+  .ko { color: #ff6b6b; }
 </style>
 </head>
 <body>
-<h1>Page de test SpeedyVideo</h1>
+<h1>Tests SpeedAllVideo — 10 scénarios automatiques</h1>
 
 <div class="card">
-  <p><strong>Vidéo 1</strong> (statique, présente au chargement) — vitesse actuelle : <span class="rate" id="r1">?</span>x</p>
+  <p>Vidéo test (statique) — vitesse : <span class="rate" id="r1">?</span>x &nbsp;|&nbsp;
+     vitesses posées par le site : <span class="rate" id="siteSet">0</span> &nbsp;|&nbsp;
+     messages de détection reçus : <span class="rate" id="detMsgs">0</span></p>
   <video id="v1" controls src="video.mp4"></video>
-</div>
-
-<div class="card">
-  <p><strong>Vidéo 2</strong> (chargée dynamiquement après 3 s) — vitesse actuelle : <span class="rate" id="r2">?</span>x</p>
-  <div id="slot2"><em>en attente…</em></div>
 </div>
 
 <div class="card">
   <button id="toggle">Pause / Lecture (vidéo 1)</button>
 </div>
 
+<div class="card">
+  <h2>Résultats</h2>
+  <ol id="results"><li>… en cours …</li></ol>
+</div>
+
 <script>
+/* ================= Simulation de browser.* =================
+   Fidèle au comportement réel testé :
+   - le background est « froid » au démarrage (speed=1.0) et ne charge son
+     stockage qu'asynchronement, puis re-diffuse à tous les onglets ;
+   - storage.sync.set notifie onChanged (comme Firefox) ;
+   - runtime.sendMessage(msg, cb) répond via callback ET renvoie une Promise. */
+const store = { defaultSpeed: 1.0, speedStep: '0.25', forceOneX: false };
+const bgListeners = [];   // listeners enregistrés par le background simulé
+const tabListeners = [];  // listeners des « onglets » (ici : content.js de cette page)
+let detMsgs = 0;          // messages setSpeed reçus avec fromDetection
+
+const clamp = s => Math.min(4, Math.max(0.25, s));
+function broadcast() {
+    tabListeners.forEach(fn => fn({ action: 'setSpeed', speed: bg.speed }));
+}
+const bg = {
+    speed: 1.0, // froid : pas encore chargé le stockage (comme au rechargement d'extension)
+    handle(msg, cb) {
+        if (msg.action === 'setSpeed') {
+            this.speed = clamp(msg.speed);
+            store.defaultSpeed = this.speed;
+            broadcast();
+        } else if (msg.action === 'getCurrentSpeed') {
+            cb && cb({ speed: this.speed });
+        }
+    },
+    /* Rechargement simulé : le background repart à 1.0 puis recharge son stockage. */
+    reload() {
+        this.speed = 1.0;
+        setTimeout(() => {
+            if (store.defaultSpeed) {
+                this.speed = clamp(store.defaultSpeed);
+                broadcast();
+            }
+        }, 50);
+    }
+};
+
+const onChangedListeners = [];
+window.browser = {
+    storage: {
+        sync: {
+            get(keys) {
+                const out = {};
+                (Array.isArray(keys) ? keys : [keys]).forEach(k => { if (k in store) out[k] = store[k]; });
+                return Promise.resolve(out);
+            },
+            set(obj) {
+                const changes = {};
+                for (const k in obj) { store[k] = obj[k]; changes[k] = { newValue: obj[k] }; }
+                onChangedListeners.forEach(fn => fn(changes));
+                return Promise.resolve();
+            }
+        },
+        onChanged: { addListener(fn) { onChangedListeners.push(fn); } }
+    },
+    runtime: {
+        onMessage: { addListener(fn) { bgListeners.push(fn); } },
+        sendMessage(msg, cb) {
+            // Enregistre d'abord les listeners « background » (réponse getCurrentSpeed),
+            // puis diffuse comme un broadcast aux onglets. fromDetection est compté.
+            bgListeners.forEach(fn => fn(msg));
+            if (msg.action === 'setSpeed') { if (msg.fromDetection) detMsgs++; broadcast(); }
+            cb && cb({ speed: bg.speed });
+            return Promise.resolve({ speed: bg.speed });
+        }
+    },
+    tabs: {
+        query() { return Promise.resolve([{ id: 1 }]); },
+        sendMessage(id, msg) { tabListeners.forEach(fn => fn(msg)); return Promise.resolve(); },
+        onCreated: { addListener() {} }
+    }
+};
+
+/* Le background « réel » est simulé par la même logique que background.js :
+   il écoute les messages, met à jour vitesse + stockage et re-diffuse. */
+bgListeners.push(msg => bg.handle(msg));
+
+/* ================= Affichage ================= */
+const v1 = document.getElementById('v1');
 function showRates() {
-  const v1 = document.getElementById('v1');
-  const r1 = document.getElementById('r1');
-  if (v1) r1.textContent = v1.playbackRate.toFixed(2);
-  const v2 = document.querySelector('#slot2 video');
-  const r2 = document.getElementById('r2');
-  if (v2) r2.textContent = v2.playbackRate.toFixed(2);
+    document.getElementById('r1').textContent = v1.playbackRate.toFixed(2);
+    document.getElementById('siteSet').textContent = siteSets;
+    document.getElementById('detMsgs').textContent = detMsgs;
 }
 setInterval(showRates, 300);
 
-// Vidéo 2 : ajoutée dynamiquement pour tester le MutationObserver
-setTimeout(() => {
-  const slot = document.getElementById('slot2');
-  slot.innerHTML = '';
-  const v = document.createElement('video');
-  v.id = 'v2';
-  v.controls = true;
-  v.src = 'video.mp4';
-  slot.appendChild(v);
-}, 3000);
-
 document.getElementById('toggle').addEventListener('click', () => {
-  const v1 = document.getElementById('v1');
-  v1.paused ? v1.play() : v1.pause();
+    v1.paused ? v1.play() : v1.pause();
 });
+
+/* Le « site » pose des vitesses sur la vidéo (comme YouTube le ferait). */
+let siteSets = 0;
+function siteSetRate(r) { v1.playbackRate = r; siteSets++; }
+
+/* ================= Harnais de tests ================= */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, timeout = 4000, interval = 50) {
+    const t0 = Date.now();
+    while (Date.now() - t0 < timeout) { if (fn()) return true; await sleep(interval); }
+    return fn();
+}
+
+const results = [];
+async function check(name, cond, detail) {
+    results.push({ name, ok: !!cond, detail });
+    render();
+}
+function render() {
+    const ol = document.getElementById('results');
+    ol.innerHTML = '';
+    results.forEach((r, i) => {
+        const li = document.createElement('li');
+        li.className = r.ok ? 'ok' : 'ko';
+        li.textContent = `${i + 1}. ${r.name} — ${r.ok ? 'OK' : 'ÉCHEC'}${r.detail ? ` (${r.detail})` : ''}`;
+        ol.appendChild(li);
+    });
+}
+
+/* ================= Scénarios ================= */
+(async () => {
+    await sleep(800); // laisse content.js charger son stockage et appliquer
+
+    /* A. Rechargement de l'extension avec defaultSpeed=0.25 : la vidéo doit
+       repasser à 0.25x SANS transiter par 1.0 (le background répond « froid »). */
+    store.defaultSpeed = 0.25;
+    bg.reload();
+    let sawOne = false;
+    const watchA = setInterval(() => { if (Math.abs(v1.playbackRate - 1) < 0.001) sawOne = true; }, 30);
+    await sleep(600);
+    clearInterval(watchA);
+    await check('A — rechargement : 0.25x restauré sans passage par 1.0',
+        Math.abs(v1.playbackRate - 0.25) < 0.001 && !sawOne,
+        `rate=${v1.playbackRate}, passage 1.0=${sawOne}`);
+
+    /* B. Force 1x : le site ré-assert 2x toutes les 200 ms (comme YouTube).
+       La vidéo doit rester à 1.0x pendant tout le forcage. */
+    store.forceOneX = true;
+    const forceTimer = setInterval(() => siteSetRate(2), 200);
+    await sleep(400);
+    let stayedAtOne = true;
+    for (let i = 0; i < 10; i++) {
+        if (Math.abs(v1.playbackRate - 1) >= 0.001) stayedAtOne = false;
+        await sleep(50);
+    }
+    clearInterval(forceTimer);
+    await check('B — Force 1x : vidéo maintenue à 1.0x malgré le site (2x toutes les 200 ms)',
+        Math.abs(v1.playbackRate - 1) < 0.001 && stayedAtOne, `rate=${v1.playbackRate}`);
+
+    /* C. Pendant le forcage, la vitesse choisie par le site (2x) est suivie :
+       bg.speed doit valoir 2 (à restaurer à la désactivation). */
+    await until(() => Math.abs(bg.speed - 2) < 0.001);
+    await check('C — forcage : vitesse du site suivie en mémoire (bg=2x, vidéo 1.0x)',
+        Math.abs(bg.speed - 2) < 0.001 && Math.abs(v1.playbackRate - 1) < 0.001,
+        `bg=${bg.speed}, rate=${v1.playbackRate}`);
+
+    /* D. Désactivation du forcage : la vitesse suivie (2x) est rétablie. */
+    store.forceOneX = false;
+    await until(() => Math.abs(v1.playbackRate - 2) < 0.001, 4000);
+    await check('D — désactivation forcage : 2x rétabli',
+        Math.abs(v1.playbackRate - 2) < 0.001, `rate=${v1.playbackRate}`);
+
+    /* E. Détection passive : le site passe à 1.5x une seule fois → l'extension
+       doit adopter cette valeur (détection + apply). */
+    detMsgs = 0;
+    siteSetRate(1.5);
+    await until(() => Math.abs(v1.playbackRate - 1.5) < 0.001 && Math.abs(bg.speed - 1.5) < 0.001, 4000);
+    const okE = Math.abs(v1.playbackRate - 1.5) < 0.001 && Math.abs(bg.speed - 1.5) < 0.001;
+    await sleep(2000); // fenêtre d'observation pour l'anti-écho (F)
+    const stable = detMsgs === 1; // exactement UNE détection, pas de boucle d'échos
+    await check('E — détection : vitesse du site (1.5x) adoptée', okE, `rate=${v1.playbackRate}, bg=${bg.speed}`);
+
+    /* F. Anti-écho : nos propres écritures ne sont pas re-détectées → aucun
+       message fromDetection supplémentaire pendant 2 s à vitesse stable. */
+    await check('F — anti-écho : 1 seule détection, pas de boucle',
+        stable && Math.abs(v1.playbackRate - 1.5) < 0.001, `detMsgs=${detMsgs}`);
+
+    /* G. Raccourci clavier D : accélère d'un pas (0.25 → 1.75x). */
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true, cancelable: true }));
+    await until(() => Math.abs(v1.playbackRate - 1.75) < 0.001, 3000);
+    await check('G — raccourci D : +un pas (1.75x)',
+        Math.abs(v1.playbackRate - 1.75) < 0.001, `rate=${v1.playbackRate}`);
+
+    /* H. Raccourci S : ralentit d'un pas (→ 1.5x). */
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', bubbles: true, cancelable: true }));
+    await until(() => Math.abs(v1.playbackRate - 1.5) < 0.001, 3000);
+    await check('H — raccourci S : −un pas (1.5x)',
+        Math.abs(v1.playbackRate - 1.5) < 0.001, `rate=${v1.playbackRate}`);
+
+    /* I. Raccourci R : retour à 1x. */
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', bubbles: true, cancelable: true }));
+    await until(() => Math.abs(v1.playbackRate - 1) < 0.001, 3000);
+    await check('I — raccourci R : retour à 1x',
+        Math.abs(v1.playbackRate - 1) < 0.001, `rate=${v1.playbackRate}`);
+
+    /* J. Double-injection (rechargement d'extension) : une 2e instance de
+       content.js s'exécute dans la même page ; l'instance obsolète doit se
+       désactiver → un seul overlay par vidéo, et le badge reste fonctionnel. */
+    await new Promise(res => {
+        const s = document.createElement('script');
+        s.src = '../content.js?reinj=' + Date.now();
+        s.onload = res; s.onerror = res;
+        document.head.appendChild(s);
+    });
+    await sleep(600); // > 250 ms (délai de détection d'instance obsolète)
+    const overlays = document.querySelectorAll('video, .sav-overlay');
+    const ovCount = document.querySelectorAll('.sav-overlay').length;
+    const badges = [...document.querySelectorAll('.sav-label')].filter(l => l.textContent.includes('Speed'));
+    await check('J — double-injection : 1 seul overlay, badge vivant',
+        ovCount === 1 && badges.length === 1 && badges[0].textContent === 'Speed 1.0x',
+        `overlays=${ovCount}, labels=${badges.map(b => b.textContent).join('|')}`);
+
+    const ok = results.every(r => r.ok);
+    console.log(ok ? '✅ 10/10 tests OK' : `❌ ${results.filter(r => !r.ok).length} échec(s)`);
+})();
 </script>
 </body>
 </html>

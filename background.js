@@ -1,151 +1,103 @@
-let currentSpeed = 1.0;
+/* SpeedAllVideo — background : vitesse courante, icône dynamique, diffusion aux onglets */
+const MIN = 0.25;
+const MAX = 4;
 
-const MIN_SPEED = 0.25;
-const MAX_SPEED = 4;
-const SPEED_STEP = 0.25; // pas des raccourcis clavier
+let speed = 1.0;   // vitesse courante (partagée par tous les onglets)
+let iconSpeed = 1; // lue à chaque image de l'animation → suit les changements en direct
 
-function clampSpeed(s) {
-    return Math.min(MAX_SPEED, Math.max(MIN_SPEED, s));
-}
+const clamp = s => Math.min(MAX, Math.max(MIN, s));
+const round2 = s => Math.round(s * 100) / 100;
 
-/* ---------- Icône dynamique : cadre blanc arrondi, texte plein cadre ----------
-   - Le cadre utilise TOUTE la surface (plus de cercle).
-   - Cadre blanc 1px, léger border-radius.
-   - Le texte occupe toute la hauteur du cadre moins 1px haut et bas.
-   - Si le label fait plus de 2 caractères, il défile horizontalement dans le cadre. */
-
-function drawSpeedIcon(size, speed, offset) {
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-
-    // Fond sombre sur toute la surface + cadre blanc 1px légèrement arrondi.
-    const radius = Math.max(2, Math.round(size * 0.15));
-    const path = () => {
-        ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(0.5, 0.5, size - 1, size - 1, radius);
-        else ctx.rect(0.5, 0.5, size - 1, size - 1);
+/* ---------- Icône : cadre blanc arrondi plein cadre, label centré ou défilant ---------- */
+function drawIcon(size, spd, off) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const x = c.getContext('2d');
+    const r = Math.max(2, Math.round(size * 0.15));
+    const box = () => {
+        x.beginPath();
+        if (x.roundRect) x.roundRect(0.5, 0.5, size - 1, size - 1, r);
+        else x.rect(0.5, 0.5, size - 1, size - 1);
     };
-    path();
-    ctx.fillStyle = '#1e1e1e';
-    ctx.fill();
-    path();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    box(); x.fillStyle = '#1e1e1e'; x.fill();
+    box(); x.strokeStyle = '#fff'; x.lineWidth = 1; x.stroke();
 
-    // Texte : hauteur = cadre − 1px haut et bas.
-    const label = `${speed}x`; // ex: "2x", "0.75x"
-    let fontSize = Math.max(4, size - 2);
-    ctx.font = `bold ${fontSize}px sans-serif`;
-    const metrics = ctx.measureText(label);
-    const textW = metrics.width;
-
-    ctx.save();
-    path();
-    ctx.clip(); // le texte défile à l'intérieur du cadre
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
+    const label = `${spd}x`;
+    x.font = `bold ${Math.max(4, size - 2)}px sans-serif`; // hauteur = cadre − 1px haut/bas
+    const tw = x.measureText(label).width;
+    x.save(); box(); x.clip();
+    x.fillStyle = '#fff'; x.textAlign = 'left'; x.textBaseline = 'middle';
     if (label.length <= 2) {
-        // Label court : centré, pas de défilement.
-        ctx.fillText(label, (size - textW) / 2, size / 2);
+        x.fillText(label, (size - tw) / 2, size / 2); // court : centré, statique
     } else {
-        // Défilement horizontal : le label traverse le cadre et recommence.
-        const innerW = size - 2;
-        const period = textW + innerW;
-        let x = innerW - (offset % period);
-        if (x < -textW) x += period;
-        ctx.fillText(label, x, size / 2);
+        const inner = size - 2, period = tw + inner;
+        let px = inner - (off % period);
+        if (px < -tw) px += period;
+        x.fillText(label, px, size / 2); // long : défilement continu dans le cadre
     }
-    ctx.restore();
-    return canvas.toDataURL('image/png');
+    x.restore();
+    return c.toDataURL('image/png');
 }
 
-let iconAnimTimer = null;
-let iconAnimPhase = 0;
-let animSpeed = 1; // vitesse courante de l'animation (lue par la boucle)
+let iconTimer = null;
+let phase = 0;
 
-function stopIconAnim() {
-    if (iconAnimTimer) { clearInterval(iconAnimTimer); iconAnimTimer = null; }
-}
-
-async function updateActionIcon() {
-    const speed = Math.round(currentSpeed * 100) / 100;
-    const label = `${speed}x`;
-    if (label.length <= 2) {
-        // "1x", "2x", "4x"… : icône statique, pas de défilement.
-        stopIconAnim();
-        try {
-            await browser.browserAction.setIcon({
-                path: {
-                    16: drawSpeedIcon(16, speed, 0),
-                    32: drawSpeedIcon(32, speed, 0),
-                    48: drawSpeedIcon(48, speed, 0)
-                }
-            });
-        } catch (e) { /* onglet en cours de fermeture etc. */ }
-        return;
+function setIcon(spd) {
+    const label = `${spd}x`;
+    if (label.length <= 2 && iconTimer) { // statique : on stoppe l'animation
+        clearInterval(iconTimer);
+        iconTimer = null;
     }
-    // Label long : défilement continu dans le cadre (~20 img/s).
-    animSpeed = speed; // la boucle lit cette valeur à chaque image → suit les changements
-    if (!iconAnimTimer) {
-        iconAnimTimer = setInterval(async () => {
-            iconAnimPhase += 1.4;
-            try {
-                await browser.browserAction.setIcon({
-                    path: {
-                        16: drawSpeedIcon(16, animSpeed, iconAnimPhase),
-                        32: drawSpeedIcon(32, animSpeed, iconAnimPhase),
-                        48: drawSpeedIcon(48, animSpeed, iconAnimPhase)
-                    }
-                });
-            } catch (e) { /* onglet en cours de fermeture etc. */ }
+    if (!iconTimer && label.length > 2) {
+        iconTimer = setInterval(() => {
+            phase += 1.4;
+            setIcon(iconSpeed); // ~20 img/s, toujours la vitesse courante
         }, 50);
     }
+    try {
+        browser.browserAction.setIcon({
+            path: {
+                16: drawIcon(16, spd, phase),
+                32: drawIcon(32, spd, phase),
+                48: drawIcon(48, spd, phase)
+            }
+        });
+    } catch (e) { /* onglet en cours de fermeture etc. */ }
 }
 
-/* ---------- Diffusion de la vitesse à tous les onglets ---------- */
-
-function broadcastSpeedToAllTabs() {
-    console.log("Broadcasting speed to all tabs:", currentSpeed);
-    browser.tabs.query({})
-        .then(allTabs => {
-            return Promise.all(allTabs.map(tab =>
-                browser.tabs.sendMessage(tab.id, {action: 'setSpeed', speed: currentSpeed})
-                    .catch(err => console.log(`Error sending to tab ${tab.id}:`, err))
-            ));
-        })
-        .then(() => console.log("Speed broadcast complete"))
-        .catch(error => console.error("Error in speed broadcast:", error));
+/* ---------- Diffusion à tous les onglets ---------- */
+function broadcast() {
+    browser.tabs.query({}).then(tabs => Promise.all(
+        tabs.map(t => browser.tabs.sendMessage(t.id, { action: 'setSpeed', speed })
+            .catch(() => {}))
+    )).catch(() => {});
 }
 
 /* ---------- Messages ---------- */
-
-browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === 'setSpeed') {
-        currentSpeed = clampSpeed(message.speed);
-        broadcastSpeedToAllTabs();
-        // Store the speed in sync storage
-        browser.storage.sync.set({defaultSpeed: currentSpeed});
-        updateActionIcon();
-    } else if (message.action === 'getCurrentSpeed') {
-        sendResponse({speed: currentSpeed});
+browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.action === 'setSpeed') {
+        speed = clamp(msg.speed);
+        broadcast();
+        browser.storage.sync.set({ defaultSpeed: speed });
+        iconSpeed = round2(speed);
+        setIcon(iconSpeed);
+    } else if (msg.action === 'getCurrentSpeed') {
+        sendResponse({ speed });
     }
 });
 
-// Initialize speed from storage
-browser.storage.sync.get('defaultSpeed').then((result) => {
-    if (result.defaultSpeed) {
-        currentSpeed = clampSpeed(result.defaultSpeed); // au cas où une ancienne valeur > MAX_SPEED
-        broadcastSpeedToAllTabs();
-        updateActionIcon();
+/* Init : on recharge la vitesse du stockage puis on redessine TOUJOURS l'icône,
+   sinon Firefox garde l'icône statique du manifest jusqu'à un setSpeed. */
+browser.storage.sync.get('defaultSpeed').then(res => {
+    if (res.defaultSpeed) {
+        speed = clamp(res.defaultSpeed);
+        broadcast();
     }
+    iconSpeed = round2(speed);
+    setIcon(iconSpeed);
 });
 
-// Set initial speed for new tabs
-browser.tabs.onCreated.addListener((tab) => {
-    browser.tabs.sendMessage(tab.id, {action: 'setSpeed', speed: currentSpeed})
-        .catch(err => console.log(`Error sending initial speed to new tab ${tab.id}:`, err));
+/* Vitesse initiale pour les nouveaux onglets */
+browser.tabs.onCreated.addListener(tab => {
+    browser.tabs.sendMessage(tab.id, { action: 'setSpeed', speed }).catch(() => {});
 });

@@ -1,100 +1,53 @@
-# SpeedyVideo Extension
+# SpeedAllVideo
 
-Enhance your video and audio playback experience with SpeedyVideo Extension - a powerful tool that lets you control media playback speeds up to 16x across various websites.
+Extension Firefox : contrôle de la vitesse de lecture vidéo/audio sur tous les onglets, de **0.25x à 4x**.
+Dérivée de [SpeedyVideo](https://addons.mozilla.org/fr/firefox/addon/speedy-video/) (Lin Cheng, MIT), réécrite et resserrée.
 
-## Features
+## Fonctionnalités
 
-- **Wide Speed Range**: Adjust playback speeds from normal to up to 16x faster
-- **Cross-tab Consistency**: Speed settings are maintained across different tabs and windows
-- **Universal Compatibility**: Works with HTML5 video/audio content across most websites
-- **Multi-platform Support**: Fully tested on both Firefox Desktop and Firefox for Android
+- **Vitesse partagée** : un seul réglage pour tous les onglets ; l'icône affiche la vitesse courante (label long défilant).
+- **Badges sur chaque vidéo** : flash central au changement de vitesse, puis badge permanent 10px en haut à droite du lecteur.
+- **Badge global** : si aucune vidéo n'est visible mais qu'un conteneur de lecteur existe (ex : YouTube avant le clic sur Play), la vitesse s'affiche dans ce conteneur — pas au coin de l'écran.
+- **Force 1x** : force la vitesse à 1.0x et suit les changements faits dans le lecteur du site (pour restaurer la bonne vitesse à la désactivation).
+- **Détection passive** : si vous changez la vitesse depuis le menu du site, l'extension adopte cette valeur.
+- **Raccourcis clavier** (hors champs de saisie) : `S` ralentir, `D` accélérer, `R` retour à 1x — pas réglable via *Speed Step* dans les options.
 
-## Installation
+## Installation (développement)
 
-### Firefox Desktop and Android
-1. Visit the [SpeedyVideo Extension page](https://addons.mozilla.org/firefox/addon/speedyvideo-extension) on Firefox Add-ons
-2. Click "Add to Firefox"
-3. Follow the prompts to complete installation
+1. [about:debugging](about:debugging#/runtime/firefox) → **Ce Firefox** → **Charger une extension temporaire…**
+2. Sélectionner le `manifest.json` de ce dossier.
 
-## Usage
+Pour regénérer les icônes statiques du manifest : `python3 tools/make-icons.py` (Pillow requis).
 
-1. Play any video or audio content on a supported website
-2. Click the SpeedyVideo Extension icon in your browser toolbar
-3. Use the slider or preset buttons to adjust playback speed
-4. Your selected speed will be applied to all supported media across tabs
+## Tests
 
-## Compatibility
+`test/` contient des pages HTML autonomes avec un `browser` simulé en mémoire — aucun serveur ni extension n'est nécessaire :
 
-### Supported Platforms
-- Firefox Desktop (Latest version)
-- Firefox for Android (Latest version)
+- `test/index.html` — 10 scénarios automatiques (rechargement, forcage, restauration, détection, anti-écho, double-injection, badge global…) ;
+- `test/force-test.html` — scénario de forcage pas à pas.
 
-### Supported Media
-- HTML5 video elements
-- HTML5 audio elements
-- Most streaming platforms using standard web players
+Ouvrir simplement dans Firefox (file:// suffit).
 
-## Performance Notes
+## Fichiers
 
-While the extension supports very high playback speeds (up to 16x), actual performance may vary based on:
-- Your device's hardware capabilities
-- Browser version
-- Website's implementation of media players
-- Network connection speed
+| Fichier | Rôle |
+|---|---|
+| `manifest.json` | Manifest V2 (Firefox) |
+| `background.js` | Vitesse courante, icône dynamique, diffusion aux onglets |
+| `content.js` | Application de la vitesse, overlays, détection, raccourcis |
+| `popup.html` / `popup.js` | Fenêtre d'action : vitesse, presets (0.25 → 3.0), reset |
+| `options.html` / `options.js` | Réglages : pas de vitesse, Force 1x, raccourcis |
+| `test/` | Pages de test autonomes |
+| `tools/make-icons.py` | Génération des icônes statiques |
 
-## Support
+## Stockage (storage.sync)
 
-If you encounter any issues or have questions:
-- Check our [FAQ](#faq) section below
-- Email us at support@speedy.gi-t.com
-- [Submit an issue](link-to-your-issue-tracker) on our GitHub repository
+| Clé | Défaut | Usage |
+|---|---|---|
+| `defaultSpeed` | 1.0 | Vitesse courante partagée |
+| `speedStep` | 0.25 | Pas des boutons ± et des raccourcis S/D |
+| `forceOneX` | false | Force la vitesse à 1.0x |
 
-## FAQ
+## Licence
 
-**Q: Why isn't the speed changing on some videos?**
-A: Some websites implement custom video players that may not be compatible with standard HTML5 video controls. We're continuously working to improve compatibility.
-
-**Q: Does this work in private browsing mode?**
-A: Yes, SpeedyVideo Extension works in private browsing windows.
-
-**Q: Will my speed settings persist after closing the browser?**
-A: Yes, your last used speed setting will be remembered for future sessions.
-
-## Privacy
-
-SpeedyVideo Extension:
-- Does not collect any user data
-- Does not track browsing history
-- Does not require any special permissions beyond those needed for basic functionality
-- Does not communicate with external servers
-
-## Contributing
-
-We welcome contributions! If you'd like to help improve SpeedyVideo Extension:
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
-
-## Version History
-
-See [CHANGELOG.md](CHANGELOG.md) for a list of changes and updates.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Thanks to all our users for their feedback and support
-- Special thanks to contributors who have helped improve the extension
-
-## Authors
-
-- Developer: Lin Cheng
-- Contact: support@speedy.gi-t.com
-
----
-
-Made with ❤️ for the Firefox community
+MIT — voir `LICENSE`.

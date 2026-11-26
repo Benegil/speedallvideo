@@ -1,53 +1,59 @@
-let currentSpeed = 1.0;
+/* SpeedAllVideo — content : applique la vitesse aux vidéos, overlays, détection, raccourcis */
+const MIN = 0.25;
+const MAX = 4;
 
-/* ================= Anti double-injection =================
+let speed = 1.0;      // vitesse courante (venue du stockage / des messages)
+let step = 0.25;      // pas de réglage (options)
+let force1x = false;  // option « Force 1x »
+let ready = false;    // stockage chargé : avant ça, on n'écrase rien (fix rechargement → 1x)
+let lastSet = 1.0;    // dernière vitesse posée par nous (anti-écho de la détection)
+let lastForced = null;// dernière vitesse du site lue pendant le forcage
+
+const clamp = s => Math.min(MAX, Math.max(MIN, s));
+const round2 = s => Math.round(s * 100) / 100;
+const visible = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+
+/* ---------- Anti double-injection ----------
    À chaque rechargement de l'extension, Firefox ré-exécute ce script dans les
-   onglets déjà ouverts SANS tuer l'ancienne instance : les deux cohabitent et
-   affichent chacune son overlay (le « fantôme » qui garde la vitesse en cours
-   au moment du rechargement). On repère l'instance active par une marque sur
-   <html> ; les instances obsolètes s'éteignent seules (timers, listeners,
-   overlays qu'elles possèdent). */
-const SAV_INSTANCE = Symbol('sav-instance');
-document.documentElement.setAttribute('data-sav-active', String(SAV_INSTANCE));
+   onglets déjà ouverts SANS tuer l'ancienne instance : deux overlays
+   cohabiteraient (le « fantôme » figé sur la vitesse du moment). L'instance
+   active se marque sur <html> ; les instances obsolètes s'éteignent seules. */
+const ME = Symbol('sav');
+document.documentElement.setAttribute('data-sav-active', String(ME));
 
-const _savIntervals = [];
-const _savListeners = [];
-let _savDead = false;
+const timers = [];
+const subs = [];
+let dead = false;
 
-function savInterval(fn, ms) {
-    const id = setInterval(() => { if (!_savDead) fn(); }, ms);
-    _savIntervals.push(id);
+function iv(fn, ms) { // setInterval qui meurt avec l'instance
+    const id = setInterval(() => { if (!dead) fn(); }, ms);
+    timers.push(id);
     return id;
 }
-function savListener(target, type, fn, opts) {
+function on(target, type, fn, opts) { // addEventListener enregistré pour le nettoyage
     target.addEventListener(type, fn, opts);
-    _savListeners.push([target, type, fn, opts]);
+    subs.push([target, type, fn, opts]);
 }
 
-// L'instance qui se sait dépassée s'éteint : plus rien d'elle ne tourne.
-savInterval(() => {
-    if (_savDead || document.documentElement.getAttribute('data-sav-active') === String(SAV_INSTANCE)) return;
-    _savDead = true;
+iv(() => {
+    if (dead || document.documentElement.getAttribute('data-sav-active') === String(ME)) return;
+    dead = true;
     console.log('SpeedAllVideo : instance obsolète, désactivation');
-    _savIntervals.forEach(id => clearInterval(id));
-    _savListeners.forEach(([t, type, fn, opts]) => t.removeEventListener(type, fn, opts));
-    // On ne supprime que ce qui est À CETTE instance (les overlays sont
-    // partagés via video._savOverlay avec l'instance qui prend la suite).
-    document.querySelectorAll('.sav-overlay').forEach(el => {
-        if (el.getAttribute('data-sav-owner') === String(SAV_INSTANCE)) el.remove();
+    timers.forEach(clearInterval);
+    subs.forEach(([t, type, fn]) => t.removeEventListener(type, fn));
+    document.querySelectorAll('.sav-overlay').forEach(el => { // ne supprime que ce qui est À CETTE instance
+        if (el.getAttribute('data-sav-owner') === String(ME)) el.remove();
     });
-    const st = document.getElementById(STYLE_ID);
-    if (st && st.getAttribute('data-sav-owner') === String(SAV_INSTANCE)) st.remove();
+    const st = document.getElementById('sav-style');
+    if (st && st.getAttribute('data-sav-owner') === String(ME)) st.remove();
 }, 250);
 
-/* ================= Styles injectés (overlay de vitesse) ================= */
-
-const STYLE_ID = 'sav-style';
-if (!document.getElementById(STYLE_ID)) {
-    const style = document.createElement('style');
-    style.id = STYLE_ID;
-    style.setAttribute('data-sav-owner', String(SAV_INSTANCE));
-    style.textContent = `
+/* ---------- Styles des labels ---------- */
+if (!document.getElementById('sav-style')) {
+    const st = document.createElement('style');
+    st.id = 'sav-style';
+    st.setAttribute('data-sav-owner', String(ME));
+    st.textContent = `
         .sav-label {
             position: absolute;
             top: 6px;
@@ -58,327 +64,316 @@ if (!document.getElementById(STYLE_ID)) {
             pointer-events: none;
             transition: all 0.35s ease;
         }
-        /* État "flash" : gros, au centre */
+        /* Flash central au changement de vitesse */
         .sav-label.sav-flash {
             font-size: clamp(28px, 7vw, 72px);
             font-weight: 800;
             letter-spacing: 1px;
-            text-shadow: 0 2px 14px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.6);
-            left: 50%;
-            top: 50%;
+            text-shadow: 0 2px 14px rgba(0,0,0,.9), 0 0 4px rgba(0,0,0,.6);
+            left: 50%; top: 50%;
             transform: translate(-50%, -50%);
         }
-        /* État "permanent" : 10px en haut à droite, fusion avec le fond */
+        /* Badge permanent : 10px en haut à droite, lisible sur n'importe quel fond */
         .sav-label.sav-persistent {
             font-size: 10px;
             font-weight: 600;
-            opacity: 0.85;
-            mix-blend-mode: difference; /* la "fusion" : texte toujours lisible sur n'importe quel fond */
-            left: auto;
-            right: 6px;
-            top: 6px;
+            opacity: .85;
+            mix-blend-mode: difference;
+            left: auto; right: 6px; top: 6px;
         }
     `;
-    (document.head || document.documentElement).appendChild(style);
+    (document.head || document.documentElement).appendChild(st);
 }
 
-/* ================= Gestion des overlays ================= */
-
-function getOverlay(video) {
-    let overlay = video._savOverlay;
-    // Overlay hérité d'une instance morte : on le reprend en propre.
-    if (overlay && overlay.getAttribute('data-sav-owner') !== String(SAV_INSTANCE)) {
-        overlay.setAttribute('data-sav-owner', String(SAV_INSTANCE));
-        const label = overlay.querySelector('.sav-label');
-        video._savLabel = label;
+/* ---------- Overlays par vidéo ---------- */
+function overlayOf(v) {
+    let o = v._savOverlay;
+    if (o && o.getAttribute('data-sav-owner') !== String(ME)) { // hérité d'une instance morte : repris en propre
+        o.setAttribute('data-sav-owner', String(ME));
+        v._savLabel = o.querySelector('.sav-label');
     }
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'sav-overlay';
-        overlay.setAttribute('data-sav-owner', String(SAV_INSTANCE));
-        overlay.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;overflow:hidden;';
-
-        const label = document.createElement('span');
-        label.className = 'sav-label sav-persistent';
-        overlay.appendChild(label);
-        (document.body || document.documentElement).appendChild(overlay);
-        video._savOverlay = overlay;
-        video._savLabel = label;
+    if (!o) {
+        o = document.createElement('div');
+        o.className = 'sav-overlay';
+        o.setAttribute('data-sav-owner', String(ME));
+        o.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;overflow:hidden;';
+        const l = document.createElement('span');
+        l.className = 'sav-label sav-persistent';
+        o.appendChild(l);
+        (document.body || document.documentElement).appendChild(o);
+        v._savOverlay = o;
+        v._savLabel = l;
     }
-    return overlay;
+    return o;
 }
 
-// Recadre l'overlay sur la vidéo (le positionnement du label est géré par CSS).
-function positionOverlay(video) {
-    const overlay = video._savOverlay;
-    if (!overlay || overlay.style.display === 'none') return;
-    const rect = video.getBoundingClientRect();
-    overlay.style.width = rect.width + 'px';
-    overlay.style.height = rect.height + 'px';
-    overlay.style.top = rect.top + 'px';
-    overlay.style.left = rect.left + 'px';
+function fit(v) { // recadre l'overlay sur sa vidéo
+    const o = v._savOverlay;
+    if (!o || o.style.display === 'none') return;
+    const r = v.getBoundingClientRect();
+    o.style.width = r.width + 'px';
+    o.style.height = r.height + 'px';
+    o.style.top = r.top + 'px';
+    o.style.left = r.left + 'px';
 }
 
-// Recadre tous les overlays (appelé par l'intervalle + au scroll/resize).
-function positionAllOverlays() {
-    const videos = document.getElementsByTagName('video');
-    Array.from(videos).forEach(video => {
-        if (video._savOverlay) positionOverlay(video);
-    });
+function fitAll() {
+    document.getElementsByTagName('video').forEach(v => { if (v._savOverlay) fit(v); });
 }
 
-/* ================= Badge global (aucune <video> visible, mais un lecteur) =
-   Ex : YouTube n'insère son élément <video> qu'au clic sur Play. Tant qu'il
-   n'y a pas de vidéo VISIBLE mais qu'un conteneur de lecteur connu existe,
-   on affiche la vitesse en haut à droite DE CE CONTENEUR (pas de l'écran, pour
-   ne pas polluer les pages sans vidéo). Dès qu'une vidéo apparaît, le badge
-   par-vidéo prend le relais. */
-const PLAYER_SELECTORS = [
+/* ---------- Badge global (aucune vidéo visible, mais un lecteur connu) ----------
+   Ex : YouTube n'insère son <video> visible qu'au clic sur Play. Tant que
+   seul un conteneur de lecteur existe, la vitesse s'affiche EN HAUT À DROITE
+   DE CE CONTENEUR (pas au coin de l'écran). Dès qu'une vidéo apparaît, le
+   badge par-vidéo prend le relais. */
+const PLAYERS = [
     '.ytp-cued-thumbnail-overlay', // YouTube avant Play : l'overlay de vignette (meilleur ancrage)
-    '#movie_player',              // YouTube
-    '.html5-video-player',        // YouTube (repli)
-    '.video-js',                  // Video.js
-    '.player_vimeo_video',        // Vimeo
-    'div[class*="video-player"]'  // lecteurs génériques
+    '#movie_player',               // YouTube
+    '.html5-video-player',         // YouTube (repli)
+    '.video-js',                   // Video.js
+    '.player_vimeo_video',         // Vimeo
+    'div[class*="video-player"]'   // lecteurs génériques
 ];
 
-// Sur YouTube, l'overlay de vignette (.ytp-cued-thumbnail-overlay) n'existe QUE
-// tant que la vidéo ne joue pas. S'il est visible, on considère qu'aucune vidéo
-// n'est « en cours », même si un <video> masqué existe déjà dans le DOM sous la
-// vignette (c'est le cas sur les pages watch : le <video> y est présent dès le
-// chargement, caché par l'overlay). C'était probablement LA cause du badge qui
-// ne s'affichait pas au chargement chez Gilles.
-function cuedOverlayVisible() {
+// Sur les pages watch, un <video> MASQUÉ existe déjà sous la vignette. L'overlay
+// de vignette n'existe que tant que la vidéo ne joue pas : s'il est visible,
+// on considère qu'aucune vidéo n'est « en cours » (c'était LA cause du badge
+// absent au chargement chez Gilles).
+function cuedVisible() {
     const el = document.querySelector('.ytp-cued-thumbnail-overlay');
-    if (!el) return false;
-    const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
+    return !!el && visible(el);
 }
 
-function findPlayerContainer() {
-    for (const sel of PLAYER_SELECTORS) {
+function findPlayer() {
+    for (const sel of PLAYERS) {
         let els;
         try { els = document.querySelectorAll(sel); } catch (e) { continue; }
-        for (const el of els) {
-            const r = el.getBoundingClientRect();
-            if (r.width > 0 && r.height > 0) return el;
-        }
+        for (const el of els) if (visible(el)) return el;
     }
     return null;
 }
 
-function updateGlobalBadge(speed) {
-    // Une « vidéo visible » = un <video> avec une surface réelle, SAUF si l'overlay
-    // de vignette YouTube est là (le <video> est alors masqué sous la vignette).
-    const hasVideo = !cuedOverlayVisible() && Array.from(document.getElementsByTagName('video')).some(v => {
-        const r = v.getBoundingClientRect();
-        return r.width > 0 && r.height > 0;
-    });
-    const container = hasVideo ? null : findPlayerContainer();
-    let badge = document.getElementById('sav-global');
+function globalBadge(spd) {
+    const hasVideo = !cuedVisible() &&
+        Array.from(document.getElementsByTagName('video')).some(visible);
+    const box = hasVideo ? null : findPlayer();
+    let b = document.getElementById('sav-global');
 
-    if (!container) {
-        if (badge && badge.style.display !== 'none') badge.style.display = 'none';
+    if (!box) {
+        if (b && b.style.display !== 'none') b.style.display = 'none';
         return;
     }
-    if (!badge) {
-        badge = document.createElement('div');
-        badge.id = 'sav-global';
-        badge.className = 'sav-overlay';
-        badge.setAttribute('data-sav-owner', String(SAV_INSTANCE));
-        badge.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;overflow:hidden;';
-        const label = document.createElement('span');
-        label.className = 'sav-label sav-persistent';
-        badge.appendChild(label);
-        (document.body || document.documentElement).appendChild(badge);
+    if (!b) {
+        b = document.createElement('div');
+        b.id = 'sav-global';
+        b.className = 'sav-overlay';
+        b.setAttribute('data-sav-owner', String(ME));
+        b.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;overflow:hidden;';
+        const l = document.createElement('span');
+        l.className = 'sav-label sav-persistent';
+        b.appendChild(l);
+        (document.body || document.documentElement).appendChild(b);
     }
-    // Recadrage sur le conteneur + texte
-    const r = container.getBoundingClientRect();
-    badge.style.width = r.width + 'px';
-    badge.style.height = r.height + 'px';
-    badge.style.top = r.top + 'px';
-    badge.style.left = r.left + 'px';
-    const label = badge.querySelector('.sav-label');
-    const text = `Speed ${speed}x`;
-    if (label.textContent !== text) label.textContent = text;
-    if (badge.style.display !== 'block') badge.style.display = 'block';
+    const r = box.getBoundingClientRect();
+    b.style.width = r.width + 'px';
+    b.style.height = r.height + 'px';
+    b.style.top = r.top + 'px';
+    b.style.left = r.left + 'px';
+    const l = b.querySelector('.sav-label');
+    const text = `Speed ${spd}x`;
+    if (l.textContent !== text) l.textContent = text;
+    if (b.style.display !== 'block') b.style.display = 'block';
 }
 
-// Recadre le badge global au scroll/resize (le conteneur peut bouger).
-function positionGlobalBadge() {
-    const badge = document.getElementById('sav-global');
-    if (!badge || badge.style.display === 'none') return;
-    const container = findPlayerContainer();
-    if (!container) { badge.style.display = 'none'; return; }
-    const r = container.getBoundingClientRect();
-    badge.style.width = r.width + 'px';
-    badge.style.height = r.height + 'px';
-    badge.style.top = r.top + 'px';
-    badge.style.left = r.left + 'px';
+function placeBadge() { // recadrage au scroll/resize
+    const b = document.getElementById('sav-global');
+    if (!b || b.style.display === 'none') return;
+    const box = findPlayer();
+    if (!box) { b.style.display = 'none'; return; }
+    const r = box.getBoundingClientRect();
+    b.style.width = r.width + 'px';
+    b.style.height = r.height + 'px';
+    b.style.top = r.top + 'px';
+    b.style.left = r.left + 'px';
 }
 
-savListener(window, 'scroll', () => { positionAllOverlays(); positionGlobalBadge(); }, { passive: true });
-savListener(window, 'resize', () => { positionAllOverlays(); positionGlobalBadge(); });
+on(window, 'scroll', () => { fitAll(); placeBadge(); }, { passive: true });
+on(window, 'resize', () => { fitAll(); placeBadge(); });
 
-/* ================= Application de la vitesse ================= */
-
-function setVideoSpeed(speed, video) {
-    if (video.playbackRate !== speed) {
-        try {
-            video.playbackRate = speed;
-            console.log(`Set playback rate for video to ${speed}`);
-            return true; // la vitesse a changé
-        } catch (error) {
-            console.error(`Error setting playback rate for video to ${speed}`, error);
-        }
+/* ---------- Application de la vitesse ---------- */
+function setRate(v, s) {
+    if (v.playbackRate !== s) {
+        try { v.playbackRate = s; return true; }
+        catch (e) { console.error(`SpeedAllVideo : playbackRate ${s} refusé`, e); }
     }
     return false;
 }
 
-function applySpeedToAllVideos(speed, showFlash = false) {
-    const videos = document.getElementsByTagName('video');
-    let changed = 0;
-    Array.from(videos).forEach(video => {
-        if (setVideoSpeed(speed, video)) changed++;
-        updateLabel(video, speed, showFlash);
-    });
-    if (changed) console.log(`Applying playback speed ${speed} to ${changed}/${videos.length} video(s)`);
-    positionAllOverlays();
-    updateGlobalBadge(speed); // badge sur le lecteur tant qu'aucune vidéo visible n'existe
-}
-
-// Met à jour l'affichage de la vitesse pour une vidéo.
-// Le badge est TOUJOURS visible (même à 1x) : dans un nouvel onglet on sait
-// immédiatement à quelle vitesse tourne la vidéo.
-function updateLabel(video, speed, flash) {
-    const overlay = getOverlay(video);
-    const label = video._savLabel;
-    const text = `Speed ${speed}x`;
-
-    if (overlay.style.display !== 'block') overlay.style.display = 'block';
-    if (label.textContent !== text) label.textContent = text; // évite de re-mutuer le DOM pour rien
+function show(v, s, flash) { // badge d'une vidéo : TOUJOURS visible (même à 1x)
+    const o = overlayOf(v);
+    const l = v._savLabel;
+    const text = `Speed ${s}x`;
+    if (o.style.display !== 'block') o.style.display = 'block';
+    if (l.textContent !== text) l.textContent = text; // pas de re-mutation inutile
 
     if (flash) {
-        // Flash central pendant 500 ms, puis migration en haut à droite
-        label.classList.remove('sav-persistent');
-        label.classList.add('sav-flash');
-        positionOverlay(video); // recentre le label immédiatement
-        clearTimeout(video._savFlashTimer);
-        video._savFlashTimer = setTimeout(() => {
-            label.classList.remove('sav-flash');
-            label.classList.add('sav-persistent');
-            positionOverlay(video);
+        l.classList.remove('sav-persistent');
+        l.classList.add('sav-flash');
+        fit(v); // recentre immédiatement
+        clearTimeout(v._savFlashTimer);
+        v._savFlashTimer = setTimeout(() => {
+            l.classList.remove('sav-flash');
+            l.classList.add('sav-persistent');
+            fit(v);
         }, 500);
-    } else if (!label.classList.contains('sav-flash')) {
-        // Simple mise à jour du badge permanent (pas de flash)
-        label.classList.add('sav-persistent');
+    } else if (!l.classList.contains('sav-flash')) {
+        l.classList.add('sav-persistent');
     }
 }
 
-/* ================= Boucle & observation ================= */
-
-// Continuously apply speed to all videos
-savInterval(() => {
-    // Force 1x actif : la vidéo est surveillée et remise à 1.0x si elle en change.
-    if (forceOneX) applySpeedToAllVideos(1.0);
-    else applySpeedToAllVideos(currentSpeed);
-}, 1000);  // Check every second
-
-// Observe DOM changes to catch new video elements.
-// On ignore les mutations causées par nos propres overlays (sinon boucle de
-// microtâches qui ralentit le navigateur) et on regroupe avec rAF pour ne pas
-// réappliquer la vitesse à chaque mutation isolée sur une page animée.
-let pendingObserve = false;
-const observer = new MutationObserver(mutations => {
-    const relevant = mutations.some(m => {
-        const t = m.target;
-        return !(t instanceof Element && t.closest('.sav-overlay'));
+function apply(spd, flash = false) {
+    const videos = document.getElementsByTagName('video');
+    let changed = 0;
+    Array.from(videos).forEach(v => {
+        if (setRate(v, spd)) changed++;
+        show(v, spd, flash);
     });
-    if (!relevant || pendingObserve) return;
-    pendingObserve = true;
+    lastSet = spd; // nos écritures ne doivent pas être « reprises » par la détection
+    if (changed) console.log(`SpeedAllVideo : vitesse ${spd}x posée sur ${changed}/${videos.length} vidéo(s)`);
+    fitAll();
+    globalBadge(spd);
+}
+
+/* ---------- Détection de la vitesse choisie dans le lecteur du site ----------
+   L'utilisateur change la vitesse depuis le menu du site (YouTube…) : on suit
+   cette valeur, c'est elle qui sera restaurée à la désactivation de Force 1x.
+   On ignore nos propres écritures (lastSet) pour éviter les allers-retours. */
+function detect() {
+    for (const v of Array.from(document.getElementsByTagName('video'))) {
+        if (!visible(v)) continue;
+        let rate = v.playbackRate;
+        try { rate = v.getPlaybackRate ? v.getPlaybackRate() : rate; } catch (e) {}
+        if (v.seeking || v.paused) continue; // YouTube force 1x pendant un seek : états instables
+        const r = round2(rate);
+        if (Math.abs(r - lastSet) < 0.001) return; // on n'écrase pas ce qu'on vient de poser
+        if (r >= MIN && r <= MAX) {
+            speed = r;
+            console.log(`SpeedAllVideo : vitesse réelle détectée ${speed}x`);
+            browser.runtime.sendMessage({ action: 'setSpeed', speed, fromDetection: true }).catch(() => {});
+        }
+        return; // une seule vidéo de référence par cycle
+    }
+}
+
+// Pendant le forcage 1x, la vitesse choisie dans le lecteur (ex : 2x) est
+// écrasée avant qu'on puisse la lire : on lit ce que le site a posé AVANT de
+// réappliquer 1x, et si ça change → l'utilisateur a touché au menu du site →
+// on mémorise pour restaurer à la désactivation. Nos écritures (1x) sont
+// ignorées via lastSet.
+function trackForced() {
+    for (const v of Array.from(document.getElementsByTagName('video'))) {
+        if (!visible(v)) continue;
+        let rate = v.playbackRate;
+        try { rate = v.getPlaybackRate ? v.getPlaybackRate() : rate; } catch (e) {}
+        const r = round2(rate);
+        if (Math.abs(r - lastSet) < 0.001) return;
+        if (lastForced === null || Math.abs(r - lastForced) >= 0.001) {
+            speed = r;
+            console.log(`SpeedAllVideo : vitesse du site suivie pendant forcage → ${speed}x`);
+            browser.runtime.sendMessage({ action: 'setSpeed', speed, fromDetection: true }).catch(() => {});
+        }
+        lastForced = r;
+        return;
+    }
+}
+
+/* ---------- Boucle & observation ---------- */
+// La détection se fait AVANT l'application : sinon notre propre écriture
+// écraserait la vitesse que le site vient de poser avant qu'on ne la lise.
+iv(() => {
+    if (!ready) return;
+    if (force1x) { trackForced(); apply(1.0); }
+    else { detect(); apply(speed); }
+}, 1000);
+
+// MutationObserver : capture les vidéos ajoutées dynamiquement. On ignore nos
+// propres overlays (sinon boucle de microtâches) et on regroupe avec rAF pour
+// ne pas réappliquer à chaque mutation isolée sur une page animée.
+let pending = false;
+const obs = new MutationObserver(ms => {
+    const relevant = ms.some(m => !(m.target instanceof Element && m.target.closest('.sav-overlay')));
+    if (!relevant || pending) return;
+    pending = true;
     requestAnimationFrame(() => {
-        pendingObserve = false;
-        applySpeedToAllVideos(currentSpeed);
+        pending = false;
+        if (ready) apply(force1x ? 1.0 : speed); // pas avant le chargement du stockage
     });
 });
+obs.observe(document.body, { childList: true, subtree: true });
 
-observer.observe(document.body, { childList: true, subtree: true });
-
-// Listen for messages from the background script
-browser.runtime.onMessage.addListener(message => {
-    console.log("Received message in content script:", JSON.stringify(message));
-    if (message && message.action === 'setSpeed') {
-        currentSpeed = message.speed;
-        applySpeedToAllVideos(currentSpeed, true); // flash sur chaque changement de vitesse
+/* ---------- Messages du background ---------- */
+browser.runtime.onMessage.addListener(msg => {
+    if (msg && msg.action === 'setSpeed') {
+        speed = msg.speed;
+        // Pendant le forcage 1x : mise à jour SANS application (la boucle gère
+        // l'affichage, la vidéo reste à 1.0x). fromDetection : écho de notre
+        // propre détection → silencieux (pas de flash).
+        if (!force1x && !msg.fromDetection) apply(speed, true);
     }
 });
 
-// Initialize on script load
-browser.runtime.sendMessage({action: 'getCurrentSpeed'}, (response) => {
-    if (response && response.speed) {
-        currentSpeed = response.speed;
-        applySpeedToAllVideos(currentSpeed); // pas de flash au chargement
+/* ---------- Init depuis le stockage ----------
+   La vitesse est lue DIRECTEMENT du stockage plutôt qu'au background : au
+   rechargement de l'extension, le background peut répondre avant d'avoir lui-
+   même chargé son stockage → il renvoyait 1.0 et la vidéo (ex : à 0.25x)
+   passait « tout de suite à 1x ». ready est levé ICI ; en attendant, ni la
+   boucle ni l'observer n'écrasent la vitesse réelle. */
+browser.storage.sync.get(['forceOneX', 'speedStep', 'defaultSpeed']).then(res => {
+    force1x = !!res.forceOneX;
+    const s = parseFloat(res.speedStep);
+    if (s > 0 && s <= MAX) step = s;
+    if (res.defaultSpeed) speed = clamp(res.defaultSpeed);
+    apply(force1x ? 1.0 : speed); // pas de flash au chargement
+    ready = true;
+});
+setTimeout(() => { ready = true; }, 1500); // filet si le stockage échoue
+
+on(browser.storage.onChanged, 'onChanged', changes => {
+    if (changes.forceOneX) {
+        force1x = !!changes.forceOneX.newValue;
+        // Activation → 1.0x immédiatement ; désactivation → vitesse suivie rétablie sans attendre le tick.
+        if (ready) apply(force1x ? 1.0 : speed);
     }
-});
-
-// Raccourcis clavier (comme Video Speed Controller) :
-//   D = accélérer, S = ralentir, R = reset 1.0x
-// Gérés ici (et non en "commands" globaux) pour ne pas déclencher
-// quand on tape dans un champ de formulaire.
-let SPEED_STEP = 0.25; // pas de réglage, chargé depuis le stockage des options
-const MIN_SPEED = 0.25;
-const MAX_SPEED = 4;
-
-function clampSpeed(s) {
-    return Math.min(MAX_SPEED, Math.max(MIN_SPEED, s));
-}
-
-// Option « Force 1x » : quand elle est active, la boucle de surveillance remet
-// chaque vidéo à 1.0x (même si un site force sa propre vitesse).
-let forceOneX = false;
-// Pas de réglage : lu depuis le stockage et mis à jour en direct quand
-// l'utilisateur change l'option dans les réglages.
-browser.storage.sync.get(['forceOneX', 'speedStep']).then(result => {
-    forceOneX = !!result.forceOneX;
-    const step = parseFloat(result.speedStep);
-    if (step > 0 && step <= MAX_SPEED) SPEED_STEP = step;
-});
-savListener(browser.storage.onChanged, 'onChanged', (changes) => {
-    if (changes.forceOneX) forceOneX = !!changes.forceOneX.newValue;
     if (changes.speedStep) {
-        const step = parseFloat(changes.speedStep.newValue);
-        if (step > 0 && step <= MAX_SPEED) SPEED_STEP = step;
+        const s = parseFloat(changes.speedStep.newValue);
+        if (s > 0 && s <= MAX) step = s;
     }
 });
 
-function isTypingTarget(el) {
+/* ---------- Raccourcis clavier : D = accélérer, S = ralentir, R = reset 1x ----------
+   Gérés ici (pas en « commands » globaux) pour ne pas déclencher quand on tape
+   dans un champ de formulaire ou avec un modificateur. */
+function typing(el) {
     if (!el) return false;
     const tag = (el.tagName || '').toLowerCase();
     return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable;
 }
 
-savListener(document, 'keydown', (e) => {
-    // On ignore si un modificateur est tenu (Ctrl/Alt/Meta) ou si on tape dans un champ.
+on(document, 'keydown', e => {
     if (e.ctrlKey || e.altKey || e.metaKey) return;
-    if (isTypingTarget(e.target)) return;
-
-    let newSpeed = null;
+    if (typing(e.target)) return;
+    let next = null;
     switch (e.key.toLowerCase()) {
-        case 'd': newSpeed = clampSpeed(currentSpeed + SPEED_STEP); break;
-        case 's': newSpeed = clampSpeed(currentSpeed - SPEED_STEP); break;
-        case 'r': newSpeed = 1.0; break;
+        case 'd': next = clamp(speed + step); break;
+        case 's': next = clamp(speed - step); break;
+        case 'r': next = 1.0; break;
         default: return;
     }
-
     e.preventDefault();
-    // On notifie le background qui re-diffuse à tous les onglets (et met à jour l'icône + le stockage).
-    browser.runtime.sendMessage({ action: 'setSpeed', speed: newSpeed });
+    browser.runtime.sendMessage({ action: 'setSpeed', speed: next }); // le background re-diffuse à tous les onglets
 }, true);
 
-// Reapply speed when the page becomes visible
-savListener(document, 'visibilitychange', () => {
-    if (!document.hidden) {
-        applySpeedToAllVideos(currentSpeed);
-    }
+/* Re-apply quand l'onglet redevient visible */
+on(document, 'visibilitychange', () => {
+    if (!document.hidden) apply(force1x ? 1.0 : speed);
 });
-
