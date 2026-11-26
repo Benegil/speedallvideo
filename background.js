@@ -31,17 +31,23 @@ function drawSpeedIcon(size, speed) {
     return new Promise(resolve => {
         base.onload = () => {
             ctx.drawImage(base, 0, 0, size, size);
-            const label = `${speed}x`;
-            // Taille de police adaptée à la longueur du texte
-            let fontSize = Math.floor(size * (label.length <= 3 ? 0.42 : 0.3));
+            const label = String(speed); // plus de "x" : l'icône en est déjà une
+            // Taille doublée par rapport à la v1 ; rétrécie si le texte déborde.
+            let fontSize = Math.floor(size * 0.84);
             ctx.font = `bold ${fontSize}px sans-serif`;
-            const textWidth = ctx.measureText(label).width;
-            const pad = Math.max(2, Math.floor(fontSize * 0.25));
+            const pad = Math.max(2, Math.floor(fontSize * 0.2));
+            let textWidth = ctx.measureText(label).width;
+            const maxW = size - pad * 2 - 2;
+            if (textWidth > maxW) {
+                fontSize = Math.max(8, Math.floor(fontSize * maxW / textWidth));
+                ctx.font = `bold ${fontSize}px sans-serif`;
+                textWidth = ctx.measureText(label).width;
+            }
             const boxW = textWidth + pad * 2;
             const boxH = fontSize + pad;
 
             // Fond sombre semi-transparent en bas à droite pour la lisibilité
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
             ctx.fillRect(size - boxW - 1, size - boxH - 1, boxW + 1, boxH + 1);
 
             ctx.fillStyle = '#ffffff';

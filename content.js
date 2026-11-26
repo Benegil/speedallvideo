@@ -23,6 +23,9 @@ if (!document.getElementById(STYLE_ID)) {
             font-weight: 800;
             letter-spacing: 1px;
             text-shadow: 0 2px 14px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.6);
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
         }
         /* État "permanent" : 10px en haut à droite, fusion avec le fond */
         .sav-label.sav-persistent {
@@ -30,6 +33,9 @@ if (!document.getElementById(STYLE_ID)) {
             font-weight: 600;
             opacity: 0.85;
             mix-blend-mode: difference; /* la "fusion" : texte toujours lisible sur n'importe quel fond */
+            left: auto;
+            right: 6px;
+            top: 6px;
         }
     `;
     (document.head || document.documentElement).appendChild(style);
@@ -54,29 +60,15 @@ function getOverlay(video) {
     return overlay;
 }
 
-// Recadre l'overlay sur la vidéo et recentre le label s'il est en mode flash.
+// Recadre l'overlay sur la vidéo (le positionnement du label est géré par CSS).
 function positionOverlay(video) {
     const overlay = video._savOverlay;
-    if (!overlay) return;
+    if (!overlay || overlay.style.display === 'none') return;
     const rect = video.getBoundingClientRect();
     overlay.style.width = rect.width + 'px';
     overlay.style.height = rect.height + 'px';
     overlay.style.top = rect.top + 'px';
     overlay.style.left = rect.left + 'px';
-
-    const label = video._savLabel;
-    if (label.classList.contains('sav-flash')) {
-        // centré tant que le flash est actif
-        label.style.left = '50%';
-        label.style.top = '50%';
-        label.style.transform = 'translate(-50%, -50%)';
-    } else {
-        // coin haut-droit, 10px
-        label.style.left = '';
-        label.style.right = '6px';
-        label.style.top = '6px';
-        label.style.transform = '';
-    }
 }
 
 // Recadre tous les overlays (appelé par l'intervalle + au scroll/resize).
@@ -97,35 +89,40 @@ function setVideoSpeed(speed, video) {
         try {
             video.playbackRate = speed;
             console.log(`Set playback rate for video to ${speed}`);
+            return true; // la vitesse a changé
         } catch (error) {
             console.error(`Error setting playback rate for video:`, error);
         }
     }
+    return false;
 }
 
 function applySpeedToAllVideos(speed, showFlash = false) {
     const videos = document.getElementsByTagName('video');
-    console.log(`Applying playback speed ${speed} to ${videos.length} video(s)`);
+    let changed = 0;
     Array.from(videos).forEach(video => {
-        setVideoSpeed(speed, video);
+        if (setVideoSpeed(speed, video)) changed++;
         updateLabel(video, speed, showFlash);
     });
+    if (changed) console.log(`Applying playback speed ${speed} to ${changed}/${videos.length} video(s)`);
     positionAllOverlays();
 }
 
 // Met à jour l'affichage de la vitesse pour une vidéo.
 function updateLabel(video, speed, flash) {
+    if (speed === 1) {
+        // Vitesse normale : pas d'overlay du tout (zéro coût DOM/layout)
+        if (video._savOverlay && video._savOverlay.style.display !== 'none') {
+            video._savOverlay.style.display = 'none';
+        }
+        return;
+    }
     const overlay = getOverlay(video);
     const label = video._savLabel;
     const text = `Speed ${speed}x`;
 
-    if (speed === 1) {
-        // Vitesse normale : on masque tout
-        overlay.style.display = 'none';
-        return;
-    }
-    overlay.style.display = 'block';
-    label.textContent = text;
+    if (overlay.style.display !== 'block') overlay.style.display = 'block';
+    if (label.textContent !== text) label.textContent = text; // évite de re-mutuer le DOM pour rien
 
     if (flash) {
         // Flash central pendant 500 ms, puis migration en haut à droite
@@ -151,9 +148,22 @@ setInterval(() => {
     applySpeedToAllVideos(currentSpeed);
 }, 1000);  // Check every second
 
-// Observe DOM changes to catch new video elements
+// Observe DOM changes to catch new video elements.
+// On ignore les mutations causées par nos propres overlays (sinon boucle de
+// microtâches qui ralentit le navigateur) et on regroupe avec rAF pour ne pas
+// réappliquer la vitesse à chaque mutation isolée sur une page animée.
+let pendingObserve = false;
 const observer = new MutationObserver(mutations => {
-    applySpeedToAllVideos(currentSpeed);
+    const relevant = mutations.some(m => {
+        const t = m.target;
+        return !(t instanceof Element && t.closest('.sav-overlay'));
+    });
+    if (!relevant || pendingObserve) return;
+    pendingObserve = true;
+    requestAnimationFrame(() => {
+        pendingObserve = false;
+        applySpeedToAllVideos(currentSpeed);
+    });
 });
 
 observer.observe(document.body, { childList: true, subtree: true });
