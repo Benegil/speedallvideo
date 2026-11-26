@@ -9,11 +9,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const MIN_SPEED = 0.25;
     const MAX_SPEED = 4;
-    const STEP = 0.25;
+    let STEP = 0.25; // pas de réglage, chargé depuis le stockage
 
     function clampSpeed(s) {
         return Math.min(MAX_SPEED, Math.max(MIN_SPEED, s));
     }
+
+    // Le pas est celui défini dans les options (stockage sync).
+    browser.storage.sync.get('speedStep').then(result => {
+        const step = parseFloat(result.speedStep);
+        if (step > 0 && step <= MAX_SPEED) {
+            STEP = step;
+            slider.step = String(step);
+        }
+    });
 
     function updateDisplay(speed) {
         speedDisplay.textContent = speed.toFixed(2) + 'x';
@@ -33,6 +42,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function setSpeed(speed) {
         speed = clampSpeed(speed);
+        // Arrondi à 2 décimales : évite les erreurs flottantes (0.30000000000000004…)
+        speed = Math.round(speed * 100) / 100;
         updateDisplay(speed);
         browser.runtime.sendMessage({ action: 'setSpeed', speed: speed });
         setStatus('✓ Speed updated', 750);

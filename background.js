@@ -65,6 +65,7 @@ function drawSpeedIcon(size, speed, offset) {
 
 let iconAnimTimer = null;
 let iconAnimPhase = 0;
+let animSpeed = 1; // vitesse courante de l'animation (lue par la boucle)
 
 function stopIconAnim() {
     if (iconAnimTimer) { clearInterval(iconAnimTimer); iconAnimTimer = null; }
@@ -88,15 +89,16 @@ async function updateActionIcon() {
         return;
     }
     // Label long : défilement continu dans le cadre (~20 img/s).
+    animSpeed = speed; // la boucle lit cette valeur à chaque image → suit les changements
     if (!iconAnimTimer) {
         iconAnimTimer = setInterval(async () => {
             iconAnimPhase += 1.4;
             try {
                 await browser.browserAction.setIcon({
                     path: {
-                        16: drawSpeedIcon(16, speed, iconAnimPhase),
-                        32: drawSpeedIcon(32, speed, iconAnimPhase),
-                        48: drawSpeedIcon(48, speed, iconAnimPhase)
+                        16: drawSpeedIcon(16, animSpeed, iconAnimPhase),
+                        32: drawSpeedIcon(32, animSpeed, iconAnimPhase),
+                        48: drawSpeedIcon(48, animSpeed, iconAnimPhase)
                     }
                 });
             } catch (e) { /* onglet en cours de fermeture etc. */ }

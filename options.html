@@ -230,6 +230,60 @@
     min-height: 18px;
   }
 
+  /* ---- Pas de vitesse (step) ---- */
+  .step-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .step-input {
+    width: 90px;
+    padding: 8px 10px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--btn-bg);
+    border: 1px solid var(--btn-border);
+    border-radius: 6px;
+    outline: none;
+  }
+  .step-input:focus { border-color: var(--primary); }
+  .step-suffix {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+  .step-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  /* ---- Force 1x ---- */
+  .force-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .force-row input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .force-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .force-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
   /* ---- Raccourcis clavier ---- */
   .shortcut-list { list-style: none; }
   .shortcut-item {
@@ -262,7 +316,6 @@
 <div class="page">
   <div class="header">
     <h1>SpeedAllVideo</h1>
-    <div class="header-badge" title="SpeedAllVideo">X</div>
   </div>
 
   <!-- Carte vitesse -->
@@ -292,17 +345,37 @@
     <div id="status"></div>
   </div>
 
+  <!-- Carte pas de vitesse -->
+  <div class="card">
+    <div class="section-label">Speed Step</div>
+    <div class="step-row">
+      <input type="number" id="speedStep" class="step-input" min="0.01" max="4" step="any" value="0.25">
+      <span class="step-suffix">x</span>
+    </div>
+    <div class="step-hint">Pas utilisé par les boutons ± et les raccourcis S / D (ex : 0.10, 0.25, 0.5)</div>
+  </div>
+
+  <!-- Carte Force 1x -->
+  <div class="card">
+    <div class="section-label">Force 1x</div>
+    <label class="force-row">
+      <input type="checkbox" id="forceOneX">
+      <span class="force-label">Force speed to 1.0x</span>
+    </label>
+    <div class="force-hint">L'extension surveille la vidéo et remet la vitesse à 1.0x si elle en change (utile quand un site force sa propre vitesse, ex : 2x)</div>
+  </div>
+
   <!-- Carte raccourcis -->
   <div class="card">
     <div class="section-label">Keyboard Shortcuts</div>
     <ul class="shortcut-list">
       <li class="shortcut-item">
         <span class="shortcut-key">S</span>
-        <span class="shortcut-desc">Slow down (−0.25x)</span>
+        <span class="shortcut-desc" id="slowDesc">Slow down (−0.25x)</span>
       </li>
       <li class="shortcut-item">
         <span class="shortcut-key">D</span>
-        <span class="shortcut-desc">Speed up (+0.25x)</span>
+        <span class="shortcut-desc" id="fastDesc">Speed up (+0.25x)</span>
       </li>
       <li class="shortcut-item">
         <span class="shortcut-key">R</span>

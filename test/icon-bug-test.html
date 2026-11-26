@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head><body>
+<pre id="out">test en cours…</pre>
+<script>
+// Stub minimal de l'API Firefox, installé AVANT background.js.
+window.browser = {
+    browserAction: { setIcon: () => Promise.resolve() },
+    runtime: { onMessage: { addListener: fn => window.__listener = fn } },
+    storage: { sync: { get: k => Promise.resolve({}), set: o => Promise.resolve() } },
+    tabs: { query: q => Promise.resolve([]), sendMessage: () => Promise.resolve(), onCreated: { addListener: f => {} } }
+};
+</script>
+<script src="../background.js"></script>
+<script>
+let lastLabel = null;
+const orig = drawSpeedIcon;
+drawSpeedIcon = (size, speed, offset) => { lastLabel = `${speed}x`; return orig(size, speed, offset); };
+
+(async () => {
+    const results = [];
+    const set = async s => { window.__listener({action: 'setSpeed', speed: s}, {}, () => {}); await new Promise(r => setTimeout(r, 300)); };
+
+    await set(0.25);
+    results.push("après set 0.25 → " + lastLabel);
+
+    await set(0.5);   // label court : l'animation doit s'arrêter et afficher 0.5x
+    results.push("après set 0.5  → " + lastLabel);
+
+    await set(1.75);  // label long : l'animation redémarre avec la bonne vitesse
+    results.push("après set 1.75 → " + lastLabel);
+
+    await set(0.25);  // le cas qui était cassé : l'ancienne animation ne doit plus refaire 0.25x… ici on attend bien 0.25x, mais en partant de 1.75
+    results.push("après set 0.25 → " + lastLabel);
+
+    // Vérification du cas exact du bug : depuis une animation 0.25x, passer à 0.5 puis revenir à 0.75
+    await set(0.25);
+    await new Promise(r => setTimeout(r, 300));
+    const avant = lastLabel;
+    await set(0.75);
+    results.push(`depuis ${avant} → après set 0.75 → ` + lastLabel);
+
+    document.getElementById('out').textContent = results.join('\n');
+})();
+</script>
+</body></html>

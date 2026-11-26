@@ -279,7 +279,9 @@ function updateLabel(video, speed, flash) {
 
 // Continuously apply speed to all videos
 savInterval(() => {
-    applySpeedToAllVideos(currentSpeed);
+    // Force 1x actif : la vidéo est surveillée et remise à 1.0x si elle en change.
+    if (forceOneX) applySpeedToAllVideos(1.0);
+    else applySpeedToAllVideos(currentSpeed);
 }, 1000);  // Check every second
 
 // Observe DOM changes to catch new video elements.
@@ -323,13 +325,31 @@ browser.runtime.sendMessage({action: 'getCurrentSpeed'}, (response) => {
 //   D = accélérer, S = ralentir, R = reset 1.0x
 // Gérés ici (et non en "commands" globaux) pour ne pas déclencher
 // quand on tape dans un champ de formulaire.
-const SPEED_STEP = 0.25;
+let SPEED_STEP = 0.25; // pas de réglage, chargé depuis le stockage des options
 const MIN_SPEED = 0.25;
 const MAX_SPEED = 4;
 
 function clampSpeed(s) {
     return Math.min(MAX_SPEED, Math.max(MIN_SPEED, s));
 }
+
+// Option « Force 1x » : quand elle est active, la boucle de surveillance remet
+// chaque vidéo à 1.0x (même si un site force sa propre vitesse).
+let forceOneX = false;
+// Pas de réglage : lu depuis le stockage et mis à jour en direct quand
+// l'utilisateur change l'option dans les réglages.
+browser.storage.sync.get(['forceOneX', 'speedStep']).then(result => {
+    forceOneX = !!result.forceOneX;
+    const step = parseFloat(result.speedStep);
+    if (step > 0 && step <= MAX_SPEED) SPEED_STEP = step;
+});
+savListener(browser.storage.onChanged, 'onChanged', (changes) => {
+    if (changes.forceOneX) forceOneX = !!changes.forceOneX.newValue;
+    if (changes.speedStep) {
+        const step = parseFloat(changes.speedStep.newValue);
+        if (step > 0 && step <= MAX_SPEED) SPEED_STEP = step;
+    }
+});
 
 function isTypingTarget(el) {
     if (!el) return false;
