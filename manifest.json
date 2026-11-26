@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "SpeedAllVideo",
   "version": "1.1",
-  "description": "Enhance video/audio playback speed across tabs up to 16x",
+  "description": "Enhance video/audio playback speed across tabs from 0.25x to 4x",
   "icons": {
     "16": "icon16.png",
     "32": "icon32.png",

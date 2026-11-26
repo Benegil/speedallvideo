@@ -1,7 +1,7 @@
 let currentSpeed = 1.0;
 
 const MIN_SPEED = 0.25;
-const MAX_SPEED = 16;
+const MAX_SPEED = 4;
 const SPEED_STEP = 0.25; // pas des raccourcis clavier
 
 function clampSpeed(s) {
@@ -94,7 +94,7 @@ function broadcastSpeedToAllTabs() {
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'setSpeed') {
-        currentSpeed = message.speed;
+        currentSpeed = clampSpeed(message.speed);
         broadcastSpeedToAllTabs();
         // Store the speed in sync storage
         browser.storage.sync.set({defaultSpeed: currentSpeed});
@@ -114,7 +114,7 @@ browser.commands.onCommand.addListener(command => {
 // Initialize speed from storage
 browser.storage.sync.get('defaultSpeed').then((result) => {
     if (result.defaultSpeed) {
-        currentSpeed = result.defaultSpeed;
+        currentSpeed = clampSpeed(result.defaultSpeed); // au cas où une ancienne valeur > MAX_SPEED
         broadcastSpeedToAllTabs();
         updateActionIcon();
     }
