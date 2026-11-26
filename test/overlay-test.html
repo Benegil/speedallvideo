@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SpeedAllVideo — Test overlay</title>
+<style>
+  body { font-family: sans-serif; margin: 2rem; background: #444; color: #eee; }
+  .card { background: #111; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; }
+  video { width: 480px; max-width: 100%; display: block; margin-bottom: 1rem; background: #000; }
+  .btns button { padding: .5rem 1rem; font-size: 1rem; cursor: pointer; margin-right: .5rem; }
+  .hint { color: #999; font-size: 13px; }
+</style>
+</head>
+<body>
+<h2>Test overlay de vitesse (vraie logique content.js)</h2>
+<p class="hint">Les boutons simulent les messages « setSpeed » du background (avec flash). La vidéo 2 est sur fond clair pour vérifier la lisibilité du badge mix-blend.</p>
+
+<div class="card">
+  <strong>Vidéo 1</strong> — vitesse affichée : <span id="r1" style="color:#7ec8ff;font-weight:bold">?</span>x
+  <video id="v1" controls src="video.mp4"></video>
+</div>
+
+<div class="card" style="background:#f5f5f5;color:#222">
+  <strong>Vidéo 2 (fond clair)</strong> — vitesse affichée : <span id="r2" style="color:#0050c0;font-weight:bold">?</span>x
+  <video id="v2" controls src="video.mp4"></video>
+</div>
+
+<div class="btns">
+  <button data-s="1">1x</button>
+  <button data-s="1.25">1.25x</button>
+  <button data-s="1.5">1.5x</button>
+  <button data-s="2">2x</button>
+  <button data-s="4">4x</button>
+  <button data-s="8">8x</button>
+  <button data-s="16">16x</button>
+</div>
+
+<script>
+// --- Stub de l'API browser pour exécuter content.js hors extension ---
+const listeners = [];
+window.browser = {
+  runtime: {
+    onMessage: { addListener: fn => listeners.push(fn) },
+    sendMessage: (msg, cb) => cb && cb({ speed: window.__testSpeed || 1 })
+  }
+};
+window.__simulateSetSpeed = s => listeners.forEach(fn => fn({ action: 'setSpeed', speed: s }));
+
+// Charge le vrai content.js de l'extension
+const s = document.createElement('script');
+s.src = '../content.js';
+document.head.appendChild(s);
+
+// --- Affichage du playbackRate réel ---
+setInterval(() => {
+  const v1 = document.getElementById('v1'), v2 = document.getElementById('v2');
+  document.getElementById('r1').textContent = v1.playbackRate.toFixed(2);
+  document.getElementById('r2').textContent = v2.playbackRate.toFixed(2);
+}, 300);
+
+document.querySelectorAll('.btns button').forEach(b => {
+  b.addEventListener('click', () => window.__simulateSetSpeed(parseFloat(b.dataset.s)));
+});
+</script>
+</body>
+</html>

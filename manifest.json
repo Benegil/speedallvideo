@@ -35,12 +35,12 @@
   },
   "commands": {
     "speed-up": {
-      "suggested_key": { "default": "Alt+Meta+ArrowRight" },
-      "description": "Vitesse + (Super+Alt+Fleche droite)"
+      "suggested_key": { "default": "Ctrl+Alt+Right" },
+      "description": "Vitesse + (Ctrl+Alt+Fleche droite)"
     },
     "speed-down": {
-      "suggested_key": { "default": "Alt+Meta+ArrowLeft" },
-      "description": "Vitesse - (Super+Alt+Fleche gauche)"
+      "suggested_key": { "default": "Ctrl+Alt+Left" },
+      "description": "Vitesse - (Ctrl+Alt+Fleche gauche)"
     }
   },
   "options_ui": {
