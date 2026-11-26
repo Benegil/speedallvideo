@@ -6,48 +6,46 @@
 <title>SpeedAllVideo — Réglages</title>
 <style>
   :root {
-    --bg: #f5f5f5;
+    --bg: #e9eaec;
     --card-bg: #ffffff;
     --text: #222;
-    --text-secondary: #666;
-    --border: #e0e0e0;
-    --primary: #0060df;
-    --primary-hover: #0047b3;
-    --accent: #ff5a10;
-    --accent-hover: #e04d0a;
-    --btn-bg: #f0f0f0;
+    --text-secondary: #555;
+    --border: #dcdfe3;
+    --primary: #2b7de9;
+    --primary-hover: #1f68c9;
+    --accent: #f2733d;
+    --accent-hover: #e0622c;
+    --btn-bg: #ffffff;
     --btn-text: #222;
-    --btn-border: #ccc;
-    --slider-track: #ddd;
-    --slider-thumb: #0060df;
-    --shortcut-bg: #f7f7f7;
-    --shortcut-key-bg: #e8e8e8;
+    --btn-border: #d4d7dc;
+    --slider-track: #d9dce1;
+    --shortcut-key-bg: #eceef1;
+    --shortcut-key-border: #cfd3d9;
     --shortcut-key-text: #333;
     --status-ok: #28a745;
-    --shadow: 0 1px 4px rgba(0,0,0,.08);
+    --shadow: 0 1px 4px rgba(0,0,0,.10);
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #1a1a1a;
-      --card-bg: #2a2a2a;
-      --text: #e0e0e0;
-      --text-secondary: #999;
-      --border: #444;
+      --bg: #191b1e;
+      --card-bg: #2a2d31;
+      --text: #e4e6e9;
+      --text-secondary: #9aa0a8;
+      --border: #3d4147;
       --primary: #6ea8fe;
       --primary-hover: #5a93e0;
-      --accent: #ff7b33;
-      --accent-hover: #e56a25;
-      --btn-bg: #3a3a3a;
-      --btn-text: #e0e0e0;
-      --btn-border: #555;
-      --slider-track: #555;
-      --slider-thumb: #6ea8fe;
-      --shortcut-bg: #333;
-      --shortcut-key-bg: #444;
-      --shortcut-key-text: #ddd;
+      --accent: #ff8b4d;
+      --accent-hover: #f2733d;
+      --btn-bg: #34383d;
+      --btn-text: #e4e6e9;
+      --btn-border: #4a4f56;
+      --slider-track: #4a4f56;
+      --shortcut-key-bg: #3a3e44;
+      --shortcut-key-border: #565b62;
+      --shortcut-key-text: #e4e6e9;
       --status-ok: #5cdb7a;
-      --shadow: 0 1px 4px rgba(0,0,0,.3);
+      --shadow: 0 1px 4px rgba(0,0,0,.35);
     }
   }
 
@@ -59,71 +57,92 @@
     color: var(--text);
     display: flex;
     justify-content: center;
-    padding: 24px 12px;
+    padding: 20px 12px;
     min-height: 100vh;
   }
 
-  .card {
-    background: var(--card-bg);
-    border-radius: 10px;
-    box-shadow: var(--shadow);
+  .page {
     width: 100%;
-    max-width: 360px;
-    padding: 24px 20px;
+    max-width: 340px;
   }
 
+  /* ---- En-tête : titre + badge rond ---- */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding: 0 2px;
+  }
   h1 {
-    text-align: center;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
-    margin-bottom: 20px;
     color: var(--primary);
   }
-
-  /* ---- Section vitesse courante ---- */
-  .speed-section {
-    text-align: center;
-    margin-bottom: 20px;
+  .header-badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
-  .speed-label {
+  /* ---- Cartes ---- */
+  .card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 18px 16px;
+  }
+  .card + .card { margin-top: 14px; }
+
+  .section-label {
     font-size: 12px;
+    font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: .5px;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
   }
 
+  /* ---- Vitesse courante ---- */
   .speed-value {
-    font-size: 48px;
+    text-align: center;
+    font-size: 46px;
     font-weight: 700;
     color: var(--primary);
     line-height: 1.1;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   /* ---- Slider ---- */
   .slider-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    justify-content: center;
+    gap: 10px;
   }
 
   .slider-btn {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     border: none;
     background: var(--primary);
     color: #fff;
-    font-size: 22px;
+    font-size: 18px;
     font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
+    text-align: center;
     flex-shrink: 0;
     transition: background .15s;
   }
@@ -134,24 +153,26 @@
     appearance: none;
     flex: 1;
     min-width: 0;
-    height: 8px;
-    border-radius: 4px;
+    height: 6px;
+    border-radius: 3px;
     background: var(--slider-track);
     outline: none;
   }
   input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 22px;
-    height: 22px;
+    appearance: none;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    background: var(--slider-thumb);
+    background: var(--primary);
     cursor: pointer;
+    border: none;
   }
   input[type="range"]::-moz-range-thumb {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    background: var(--slider-thumb);
+    background: var(--primary);
     cursor: pointer;
     border: none;
   }
@@ -169,14 +190,13 @@
     border: 1px solid var(--btn-border);
     border-radius: 6px;
     padding: 8px 0;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
+    text-align: center;
     cursor: pointer;
-    transition: background .15s, border-color .15s;
+    transition: border-color .15s, background .15s;
   }
-  .preset-btn:hover {
-    border-color: var(--primary);
-  }
+  .preset-btn:hover { border-color: var(--primary); }
   .preset-btn.active {
     border-color: var(--primary);
     box-shadow: inset 0 0 0 1px var(--primary);
@@ -186,82 +206,74 @@
   .reset-btn {
     display: block;
     width: 100%;
-    margin-top: 16px;
+    margin-top: 14px;
     background: var(--accent);
     color: #fff;
     border: none;
-    padding: 12px;
+    padding: 11px;
     font-size: 15px;
     font-weight: 700;
-    border-radius: 6px;
+    text-align: center;
+    border-radius: 8px;
     cursor: pointer;
     transition: background .15s;
   }
   .reset-btn:hover { background: var(--accent-hover); }
 
-  /* ---- Section raccourcis ---- */
-  .shortcuts {
-    margin-top: 24px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-  }
-  .shortcuts h2 {
+  /* ---- Status ---- */
+  #status {
+    text-align: center;
+    margin-top: 10px;
+    font-weight: 600;
     font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    color: var(--text-secondary);
-    margin-bottom: 12px;
+    color: var(--status-ok);
+    min-height: 18px;
   }
-  .shortcut-list {
-    list-style: none;
-  }
+
+  /* ---- Raccourcis clavier ---- */
+  .shortcut-list { list-style: none; }
   .shortcut-item {
     display: flex;
     align-items: center;
-    padding: 6px 0;
+    padding: 5px 0;
   }
   .shortcut-key {
     background: var(--shortcut-key-bg);
+    border: 1px solid var(--shortcut-key-border);
     color: var(--shortcut-key-text);
-    border-radius: 4px;
-    padding: 3px 8px;
+    border-radius: 5px;
+    padding: 4px 0;
+    width: 32px;
     font-size: 13px;
-    font-weight: 600;
-    min-width: 42px;
+    font-weight: 700;
     text-align: center;
     margin-right: 12px;
     font-family: monospace;
+    flex-shrink: 0;
   }
   .shortcut-desc {
     font-size: 14px;
     color: var(--text);
   }
-
-  /* ---- Status ---- */
-  #status {
-    text-align: center;
-    margin-top: 12px;
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--status-ok);
-    min-height: 20px;
-  }
 </style>
 </head>
 <body>
 
-<div class="card">
-  <h1>SpeedAllVideo</h1>
+<div class="page">
+  <div class="header">
+    <h1>SpeedAllVideo</h1>
+    <div class="header-badge" title="SpeedAllVideo">X</div>
+  </div>
 
-  <!-- Vitesse courante -->
-  <div class="speed-section">
-    <div class="speed-label">Current Speed</div>
+  <!-- Carte vitesse -->
+  <div class="card">
+    <div class="section-label">Current Speed</div>
     <div class="speed-value" id="currentSpeed">1.00x</div>
 
     <div class="slider-row">
-      <button class="slider-btn" id="minusBtn">−</button>
+      <button class="slider-btn" id="minusBtn" aria-label="Ralentir">−</button>
       <input type="range" id="speedSlider" min="0.25" max="4" step="0.25" value="1">
-      <button class="slider-btn" id="plusBtn">+</button>
+      <button class="slider-btn" id="plusBtn" aria-label="Accélérer">+</button>
     </div>
 
     <!-- Boutons prédéfinis -->
@@ -276,11 +288,13 @@
 
     <!-- Reset -->
     <button class="reset-btn" id="resetBtn">Reset (1.0x)</button>
+
+    <div id="status"></div>
   </div>
 
-  <!-- Raccourcis clavier -->
-  <div class="shortcuts">
-    <h2>Keyboard Shortcuts</h2>
+  <!-- Carte raccourcis -->
+  <div class="card">
+    <div class="section-label">Keyboard Shortcuts</div>
     <ul class="shortcut-list">
       <li class="shortcut-item">
         <span class="shortcut-key">S</span>
@@ -296,8 +310,6 @@
       </li>
     </ul>
   </div>
-
-  <div id="status"></div>
 </div>
 
 <script src="options.js"></script>
