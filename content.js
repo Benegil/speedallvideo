@@ -1,11 +1,52 @@
 let currentSpeed = 1.0;
 
+/* ================= Anti double-injection =================
+   À chaque rechargement de l'extension, Firefox ré-exécute ce script dans les
+   onglets déjà ouverts SANS tuer l'ancienne instance : les deux cohabitent et
+   affichent chacune son overlay (le « fantôme » qui garde la vitesse en cours
+   au moment du rechargement). On repère l'instance active par une marque sur
+   <html> ; les instances obsolètes s'éteignent seules (timers, listeners,
+   overlays qu'elles possèdent). */
+const SAV_INSTANCE = Symbol('sav-instance');
+document.documentElement.setAttribute('data-sav-active', String(SAV_INSTANCE));
+
+const _savIntervals = [];
+const _savListeners = [];
+let _savDead = false;
+
+function savInterval(fn, ms) {
+    const id = setInterval(() => { if (!_savDead) fn(); }, ms);
+    _savIntervals.push(id);
+    return id;
+}
+function savListener(target, type, fn, opts) {
+    target.addEventListener(type, fn, opts);
+    _savListeners.push([target, type, fn, opts]);
+}
+
+// L'instance qui se sait dépassée s'éteint : plus rien d'elle ne tourne.
+savInterval(() => {
+    if (_savDead || document.documentElement.getAttribute('data-sav-active') === String(SAV_INSTANCE)) return;
+    _savDead = true;
+    console.log('SpeedAllVideo : instance obsolète, désactivation');
+    _savIntervals.forEach(id => clearInterval(id));
+    _savListeners.forEach(([t, type, fn, opts]) => t.removeEventListener(type, fn, opts));
+    // On ne supprime que ce qui est À CETTE instance (les overlays sont
+    // partagés via video._savOverlay avec l'instance qui prend la suite).
+    document.querySelectorAll('.sav-overlay').forEach(el => {
+        if (el.getAttribute('data-sav-owner') === String(SAV_INSTANCE)) el.remove();
+    });
+    const st = document.getElementById(STYLE_ID);
+    if (st && st.getAttribute('data-sav-owner') === String(SAV_INSTANCE)) st.remove();
+}, 250);
+
 /* ================= Styles injectés (overlay de vitesse) ================= */
 
 const STYLE_ID = 'sav-style';
 if (!document.getElementById(STYLE_ID)) {
     const style = document.createElement('style');
     style.id = STYLE_ID;
+    style.setAttribute('data-sav-owner', String(SAV_INSTANCE));
     style.textContent = `
         .sav-label {
             position: absolute;
@@ -45,9 +86,16 @@ if (!document.getElementById(STYLE_ID)) {
 
 function getOverlay(video) {
     let overlay = video._savOverlay;
+    // Overlay hérité d'une instance morte : on le reprend en propre.
+    if (overlay && overlay.getAttribute('data-sav-owner') !== String(SAV_INSTANCE)) {
+        overlay.setAttribute('data-sav-owner', String(SAV_INSTANCE));
+        const label = overlay.querySelector('.sav-label');
+        video._savLabel = label;
+    }
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.className = 'sav-overlay';
+        overlay.setAttribute('data-sav-owner', String(SAV_INSTANCE));
         overlay.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;overflow:hidden;';
 
         const label = document.createElement('span');
@@ -79,8 +127,8 @@ function positionAllOverlays() {
     });
 }
 
-window.addEventListener('scroll', positionAllOverlays, { passive: true });
-window.addEventListener('resize', positionAllOverlays);
+savListener(window, 'scroll', positionAllOverlays, { passive: true });
+savListener(window, 'resize', positionAllOverlays);
 
 /* ================= Application de la vitesse ================= */
 
@@ -91,7 +139,7 @@ function setVideoSpeed(speed, video) {
             console.log(`Set playback rate for video to ${speed}`);
             return true; // la vitesse a changé
         } catch (error) {
-            console.error(`Error setting playback rate for video:`, error);
+            console.error(`Error setting playback rate for video to ${speed}`, error);
         }
     }
     return false;
@@ -144,7 +192,7 @@ function updateLabel(video, speed, flash) {
 /* ================= Boucle & observation ================= */
 
 // Continuously apply speed to all videos
-setInterval(() => {
+savInterval(() => {
     applySpeedToAllVideos(currentSpeed);
 }, 1000);  // Check every second
 
@@ -203,7 +251,7 @@ function isTypingTarget(el) {
     return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable;
 }
 
-document.addEventListener('keydown', (e) => {
+savListener(document, 'keydown', (e) => {
     // On ignore si un modificateur est tenu (Ctrl/Alt/Meta) ou si on tape dans un champ.
     if (e.ctrlKey || e.altKey || e.metaKey) return;
     if (isTypingTarget(e.target)) return;
@@ -222,9 +270,8 @@ document.addEventListener('keydown', (e) => {
 }, true);
 
 // Reapply speed when the page becomes visible
-document.addEventListener('visibilitychange', () => {
+savListener(document, 'visibilitychange', () => {
     if (!document.hidden) {
         applySpeedToAllVideos(currentSpeed);
     }
 });
-

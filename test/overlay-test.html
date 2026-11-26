@@ -7,13 +7,14 @@
   body { font-family: sans-serif; margin: 2rem; background: #444; color: #eee; }
   .card { background: #111; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; }
   video { width: 480px; max-width: 100%; display: block; margin-bottom: 1rem; background: #000; }
-  .btns button { padding: .5rem 1rem; font-size: 1rem; cursor: pointer; margin-right: .5rem; }
+  .btns button { padding: .5rem 1rem; font-size: 1rem; cursor: pointer; margin-right: .3rem; margin-bottom: .4rem; }
   .hint { color: #999; font-size: 13px; }
+  #diag { background: #000; color: #7f7; font-family: monospace; padding: .6rem; border-radius: 6px; white-space: pre-line; }
 </style>
 </head>
 <body>
 <h2>Test overlay de vitesse (vraie logique content.js)</h2>
-<p class="hint">Les boutons simulent les messages « setSpeed » du background (avec flash). La vidéo 2 est sur fond clair pour vérifier la lisibilité du badge mix-blend.</p>
+<p class="hint">Le bouton « Simuler un rechargement d'extension » ré-exécute content.js SANS vider le DOM, comme Firefox le fait sur les onglets déjà ouverts : l'ancienne instance doit s'éteindre seule (plus de fantôme).</p>
 
 <div class="card">
   <strong>Vidéo 1</strong> — vitesse affichée : <span id="r1" style="color:#7ec8ff;font-weight:bold">?</span>x
@@ -25,12 +26,12 @@
   <video id="v2" controls src="video.mp4"></video>
 </div>
 
-<div class="btns">
-  <button data-s="1">1x</button>
-  <button data-s="1.25">1.25x</button>
-  <button data-s="1.5">1.5x</button>
-  <button data-s="2">2x</button>
-  <button data-s="4">4x (max)</button>
+<div class="btns" id="speeds"></div>
+<button id="reload-ext" style="padding:.6rem 1.2rem;font-size:1.05rem;background:#c8760a;color:#fff;border:none;border-radius:6px;cursor:pointer">Simuler un rechargement d'extension</button>
+
+<div class="card" style="margin-top:1rem">
+<strong>Diagnostics</strong>
+<div id="diag">…</div>
 </div>
 
 <script>
@@ -42,23 +43,51 @@ window.browser = {
     sendMessage: (msg, cb) => cb && cb({ speed: window.__testSpeed || 1 })
   }
 };
-window.__simulateSetSpeed = s => listeners.forEach(fn => fn({ action: 'setSpeed', speed: s }));
+window.__simulateSetSpeed = s => {
+  window.__testSpeed = s; // la prochaine init de content.js verra cette vitesse
+  listeners.forEach(fn => fn({ action: 'setSpeed', speed: s }));
+};
 
-// Charge le vrai content.js de l'extension
-const s = document.createElement('script');
-s.src = '../content.js';
-document.head.appendChild(s);
+function loadContentScript() {
+  const s = document.createElement('script');
+  s.src = '../content.js?nocache=' + Date.now();
+  document.head.appendChild(s);
+}
+loadContentScript(); // injection initiale
 
-// --- Affichage du playbackRate réel ---
+// --- Boutons de vitesse 0.25 → 4 par pas 0.25 ---
+const speedsBox = document.getElementById('speeds');
+for (let s = 0.25; s <= 4.01; s += 0.25) {
+  const v = Math.round(s * 100) / 100;
+  const b = document.createElement('button');
+  b.textContent = v + 'x';
+  b.onclick = () => window.__simulateSetSpeed(v);
+  speedsBox.appendChild(b);
+}
+
+// --- Simuler le rechargement d'extension : ré-exécuter content.js sur le même DOM ---
+document.getElementById('reload-ext').onclick = () => {
+  loadContentScript();
+  document.getElementById('diag').textContent = 'Rechargement simulé… (l\'ancienne instance doit mourir en <0,3 s)';
+};
+
+// --- Affichage du playbackRate réel + diagnostics ---
 setInterval(() => {
   const v1 = document.getElementById('v1'), v2 = document.getElementById('v2');
   document.getElementById('r1').textContent = v1.playbackRate.toFixed(2);
   document.getElementById('r2').textContent = v2.playbackRate.toFixed(2);
+  const overlays = document.querySelectorAll('.sav-overlay');
+  const styles = document.querySelectorAll('#sav-style');
+  const labels = [...overlays].map(o => {
+    const l = o.querySelector('.sav-label');
+    return (l ? l.textContent : '?') + ' [' + (l && l.classList.contains('sav-flash') ? 'flash' : 'badge') + ']';
+  });
+  document.getElementById('diag').textContent =
+    `overlays vivants: ${overlays.length} (attendu: 1 par vidéo, max 2)\n` +
+    `styles #sav-style: ${styles.length} (attendu: 1)\n` +
+    `labels: ${labels.join(' | ') || 'aucun'}\n` +
+    `data-sav-active: ${document.documentElement.getAttribute('data-sav-active')}`;
 }, 300);
-
-document.querySelectorAll('.btns button').forEach(b => {
-  b.addEventListener('click', () => window.__simulateSetSpeed(parseFloat(b.dataset.s)));
-});
 </script>
 </body>
 </html>
