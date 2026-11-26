@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Test icône SpeedAllVideo</title>
+<style>
+  body { font-family: sans-serif; background: #2b2b2b; color: #eee; padding: 1rem; }
+  .row { display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem; }
+  .cell { text-align: center; }
+  canvas { image-rendering: pixelated; border: 1px solid #555; }
+  .lbl { font-size: 12px; color: #aaa; margin-top: 4px; }
+</style>
+</head>
+<body>
+<h3>Rendu du badge de vitesse (logique identique à background.js)</h3>
+<div class="row" id="row"></div>
+
+<script>
+const SPEEDS = [1.25, 1.5, 2, 2.75, 4, 8, 16];
+
+function drawSpeedIcon(size, speed) {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const base = new Image();
+    base.src = '../icon' + size + '.png';
+    return new Promise(resolve => {
+        base.onload = () => {
+            ctx.drawImage(base, 0, 0, size, size);
+            const label = speed + 'x';
+            let fontSize = Math.floor(size * (label.length <= 3 ? 0.42 : 0.3));
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            const textWidth = ctx.measureText(label).width;
+            const pad = Math.max(2, Math.floor(fontSize * 0.25));
+            const boxW = textWidth + pad * 2;
+            const boxH = fontSize + pad;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+            ctx.fillRect(size - boxW - 1, size - boxH - 1, boxW + 1, boxH + 1);
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, size - pad, size - pad);
+            resolve(canvas.toDataURL('image/png'));
+        };
+    });
+}
+
+(async () => {
+    const row = document.getElementById('row');
+    for (const s of SPEEDS) {
+        for (const size of [48]) {
+            const url = await drawSpeedIcon(size, s);
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            const img = new Image();
+            img.src = url;
+            img.style.width = size * 2 + 'px';
+            img.style.imageRendering = 'pixelated';
+            const lbl = document.createElement('div');
+            lbl.className = 'lbl';
+            lbl.textContent = s + 'x (icône ' + size + ')';
+            cell.appendChild(img);
+            cell.appendChild(lbl);
+            row.appendChild(cell);
+        }
+    }
+})();
+</script>
+</body>
+</html>

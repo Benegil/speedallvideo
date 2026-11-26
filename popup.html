@@ -65,6 +65,17 @@
             align-items: center;
             width: 200px;
         }
+        .hint {
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
+        }
+        kbd {
+            background: var(--slider-track);
+            border-radius: 3px;
+            padding: 1px 4px;
+            font-size: 10px;
+        }
 
         /* Dark Mode Styles */
         @media (prefers-color-scheme: dark) {
@@ -88,6 +99,7 @@
         <input type="range" id="speedSlider" min="0.25" max="16" step="0.25" value="1">
         <p>Current speed: <span id="currentSpeed">1.00</span>x</p>
     </div>
+    <p class="hint"><kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>→</kbd> : +0.25x<br><kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>←</kbd> : −0.25x</p>
 </div>
 <script src="popup.js"></script>
 </body>

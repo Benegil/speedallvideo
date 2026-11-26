@@ -33,6 +33,16 @@
   "browser_action": {
     "default_popup": "popup.html"
   },
+  "commands": {
+    "speed-up": {
+      "suggested_key": { "default": "Alt+Meta+ArrowRight" },
+      "description": "Vitesse + (Super+Alt+Fleche droite)"
+    },
+    "speed-down": {
+      "suggested_key": { "default": "Alt+Meta+ArrowLeft" },
+      "description": "Vitesse - (Super+Alt+Fleche gauche)"
+    }
+  },
   "options_ui": {
     "page": "options.html"
   },
