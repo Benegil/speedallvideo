@@ -8,13 +8,9 @@ function clampSpeed(s) {
     return Math.min(MAX_SPEED, Math.max(MIN_SPEED, s));
 }
 
-/* ---------- Icône dynamique : chiffre en grand, taille animée ---------- */
+/* ---------- Icône dynamique : chiffre en grand, statique (pas de pulsing) ---------- */
 
-let iconAnimTimer = null;
-let animPhase = 0;
-let animSpeed = 1;
-
-function drawSpeedIcon(size, speed, scale) {
+function drawSpeedIcon(size, speed) {
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -36,14 +32,16 @@ function drawSpeedIcon(size, speed, scale) {
             ctx.fillRect(0, 0, size, size);
             ctx.restore();
 
-            // Texte en grand au centre ; scale (0.55 → 1) anime la taille de police.
+            // Texte au centre ; la taille est réduite si nécessaire pour que le
+            // label entier (ex: "1.75x") tienne dans le cercle → pas de débordement
+            // ni d'animation.
             const label = `${speed}x`; // ex: "2x", "0.75x"
-            let fontSize = Math.floor(size * 0.85 * scale);
+            let fontSize = Math.floor(size * 0.8);
             ctx.font = `bold ${fontSize}px sans-serif`;
-            const maxW = size * 0.8;
+            const maxW = size * 0.72;
             const textW = ctx.measureText(label).width;
             if (textW > maxW) {
-                fontSize = Math.max(6, Math.floor(fontSize * maxW / textW));
+                fontSize = Math.max(4, Math.floor(fontSize * maxW / textW));
                 ctx.font = `bold ${fontSize}px sans-serif`;
             }
             ctx.fillStyle = '#ffffff';
@@ -55,35 +53,21 @@ function drawSpeedIcon(size, speed, scale) {
     });
 }
 
-function stopIconAnim() {
-    if (iconAnimTimer) { clearInterval(iconAnimTimer); iconAnimTimer = null; }
-}
-
 async function updateActionIcon() {
     const speed = Math.round(currentSpeed * 100) / 100;
     if (speed === 1.0) {
         // Vitesse normale : X simple, pas d'animation
-        stopIconAnim();
         await browser.browserAction.setIcon({ path: { 32: 'icon32.png', 48: 'icon48.png' } });
         return;
     }
-    animSpeed = speed;
-    // La taille de police "défile" en douceur entre 55% et 100% :
-    // même une valeur longue comme 0.75x passe régulièrement en grand.
-    if (!iconAnimTimer) {
-        iconAnimTimer = setInterval(async () => {
-            animPhase += 0.12;
-            const scale = 0.55 + 0.45 * (0.5 + 0.5 * Math.cos(animPhase));
-            try {
-                await browser.browserAction.setIcon({
-                    path: {
-                        32: await drawSpeedIcon(32, animSpeed, scale),
-                        48: await drawSpeedIcon(48, animSpeed, scale)
-                    }
-                });
-            } catch (e) { /* onglet en cours de fermeture etc. */ }
-        }, 50); // ~20 images/s
-    }
+    try {
+        await browser.browserAction.setIcon({
+            path: {
+                32: await drawSpeedIcon(32, speed),
+                48: await drawSpeedIcon(48, speed)
+            }
+        });
+    } catch (e) { /* onglet en cours de fermeture etc. */ }
 }
 
 /* ---------- Diffusion de la vitesse à tous les onglets ---------- */
