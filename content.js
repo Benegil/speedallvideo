@@ -185,10 +185,46 @@ browser.runtime.sendMessage({action: 'getCurrentSpeed'}, (response) => {
     }
 });
 
+// Raccourcis clavier (comme Video Speed Controller) :
+//   D = accélérer, S = ralentir, R = reset 1.0x
+// Gérés ici (et non en "commands" globaux) pour ne pas déclencher
+// quand on tape dans un champ de formulaire.
+const SPEED_STEP = 0.25;
+const MIN_SPEED = 0.25;
+const MAX_SPEED = 4;
+
+function clampSpeed(s) {
+    return Math.min(MAX_SPEED, Math.max(MIN_SPEED, s));
+}
+
+function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = (el.tagName || '').toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable;
+}
+
+document.addEventListener('keydown', (e) => {
+    // On ignore si un modificateur est tenu (Ctrl/Alt/Meta) ou si on tape dans un champ.
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (isTypingTarget(e.target)) return;
+
+    let newSpeed = null;
+    switch (e.key.toLowerCase()) {
+        case 'd': newSpeed = clampSpeed(currentSpeed + SPEED_STEP); break;
+        case 's': newSpeed = clampSpeed(currentSpeed - SPEED_STEP); break;
+        case 'r': newSpeed = 1.0; break;
+        default: return;
+    }
+
+    e.preventDefault();
+    // On notifie le background qui re-diffuse à tous les onglets (et met à jour l'icône + le stockage).
+    browser.runtime.sendMessage({ action: 'setSpeed', speed: newSpeed });
+}, true);
+
 // Reapply speed when the page becomes visible
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
-        console.log('Page became visible, reapplying saved speed');
         applySpeedToAllVideos(currentSpeed);
     }
 });
+

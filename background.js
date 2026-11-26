@@ -8,19 +8,13 @@ function clampSpeed(s) {
     return Math.min(MAX_SPEED, Math.max(MIN_SPEED, s));
 }
 
-// Ajuste la vitesse d'un incrément (dir: +1 ou -1), arrondit au quart.
-function adjustSpeed(dir) {
-    currentSpeed = Math.round(clampSpeed(currentSpeed + dir * SPEED_STEP) * 4) / 4;
-    broadcastSpeedToAllTabs();
-    browser.storage.sync.set({ defaultSpeed: currentSpeed });
-    updateActionIcon();
-}
+/* ---------- Icône dynamique : chiffre en grand, taille animée ---------- */
 
-/* ---------- Icône dynamique : affiche la vitesse quand elle n'est pas 1x ---------- */
+let iconAnimTimer = null;
+let animPhase = 0;
+let animSpeed = 1;
 
-const iconCache = {}; // vitesse -> {32, 48} (data URLs)
-
-function drawSpeedIcon(size, speed) {
+function drawSpeedIcon(size, speed, scale) {
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -31,48 +25,65 @@ function drawSpeedIcon(size, speed) {
     return new Promise(resolve => {
         base.onload = () => {
             ctx.drawImage(base, 0, 0, size, size);
-            const label = String(speed); // plus de "x" : l'icône en est déjà une
-            // Taille doublée par rapport à la v1 ; rétrécie si le texte déborde.
-            let fontSize = Math.floor(size * 0.84);
+
+            // Fond sombre sur tout le cercle : lisible même à 16px dans la barre.
+            const r = size / 2;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(r, r, r - Math.max(1, size * 0.03), 0, Math.PI * 2);
+            ctx.clip();
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+            ctx.fillRect(0, 0, size, size);
+            ctx.restore();
+
+            // Texte en grand au centre ; scale (0.55 → 1) anime la taille de police.
+            const label = `${speed}x`; // ex: "2x", "0.75x"
+            let fontSize = Math.floor(size * 0.85 * scale);
             ctx.font = `bold ${fontSize}px sans-serif`;
-            const pad = Math.max(2, Math.floor(fontSize * 0.2));
-            let textWidth = ctx.measureText(label).width;
-            const maxW = size - pad * 2 - 2;
-            if (textWidth > maxW) {
-                fontSize = Math.max(8, Math.floor(fontSize * maxW / textWidth));
+            const maxW = size * 0.8;
+            const textW = ctx.measureText(label).width;
+            if (textW > maxW) {
+                fontSize = Math.max(6, Math.floor(fontSize * maxW / textW));
                 ctx.font = `bold ${fontSize}px sans-serif`;
-                textWidth = ctx.measureText(label).width;
             }
-            const boxW = textWidth + pad * 2;
-            const boxH = fontSize + pad;
-
-            // Fond sombre semi-transparent en bas à droite pour la lisibilité
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            ctx.fillRect(size - boxW - 1, size - boxH - 1, boxW + 1, boxH + 1);
-
             ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(label, size - pad, size - pad);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, size / 2, size / 2 + fontSize * 0.05);
             resolve(canvas.toDataURL('image/png'));
         };
     });
 }
 
+function stopIconAnim() {
+    if (iconAnimTimer) { clearInterval(iconAnimTimer); iconAnimTimer = null; }
+}
+
 async function updateActionIcon() {
     const speed = Math.round(currentSpeed * 100) / 100;
     if (speed === 1.0) {
-        // Vitesse normale : icône d'origine, pas de badge
+        // Vitesse normale : X simple, pas d'animation
+        stopIconAnim();
         await browser.browserAction.setIcon({ path: { 32: 'icon32.png', 48: 'icon48.png' } });
         return;
     }
-    if (!iconCache[speed]) {
-        iconCache[speed] = {
-            32: await drawSpeedIcon(32, speed),
-            48: await drawSpeedIcon(48, speed)
-        };
+    animSpeed = speed;
+    // La taille de police "défile" en douceur entre 55% et 100% :
+    // même une valeur longue comme 0.75x passe régulièrement en grand.
+    if (!iconAnimTimer) {
+        iconAnimTimer = setInterval(async () => {
+            animPhase += 0.12;
+            const scale = 0.55 + 0.45 * (0.5 + 0.5 * Math.cos(animPhase));
+            try {
+                await browser.browserAction.setIcon({
+                    path: {
+                        32: await drawSpeedIcon(32, animSpeed, scale),
+                        48: await drawSpeedIcon(48, animSpeed, scale)
+                    }
+                });
+            } catch (e) { /* onglet en cours de fermeture etc. */ }
+        }, 50); // ~20 images/s
     }
-    await browser.browserAction.setIcon({ path: { 32: iconCache[speed][32], 48: iconCache[speed][48] } });
 }
 
 /* ---------- Diffusion de la vitesse à tous les onglets ---------- */
@@ -102,13 +113,6 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } else if (message.action === 'getCurrentSpeed') {
         sendResponse({speed: currentSpeed});
     }
-});
-
-/* ---------- Raccourcis clavier : Super+Alt+Fleche droite / gauche ---------- */
-
-browser.commands.onCommand.addListener(command => {
-    if (command === 'speed-up') adjustSpeed(1);
-    else if (command === 'speed-down') adjustSpeed(-1);
 });
 
 // Initialize speed from storage

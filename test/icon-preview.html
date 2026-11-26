@@ -2,23 +2,26 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Test icône SpeedAllVideo</title>
+<title>Test icône SpeedAllVideo — animation</title>
 <style>
   body { font-family: sans-serif; background: #2b2b2b; color: #eee; padding: 1rem; }
-  .row { display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem; }
+  .row { display: flex; gap: 2rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
   .cell { text-align: center; }
-  canvas { image-rendering: pixelated; border: 1px solid #555; }
   .lbl { font-size: 12px; color: #aaa; margin-top: 4px; }
+  h3 { margin: 0 0 .5rem 0; }
 </style>
 </head>
 <body>
-<h3>Rendu du badge de vitesse (logique identique à background.js)</h3>
+<h3>Icône animée (logique identique à background.js) — chaque vitesse : trame max → min, en 16px réel et 48px x2</h3>
 <div class="row" id="row"></div>
 
 <script>
-const SPEEDS = [1.25, 1.5, 2, 2.75, 4, 8, 16];
+const SPEEDS = [0.75, 1.25, 2, 4];
+// Trames de l'animation : scale = 0.55 + 0.45*(0.5+0.5*cos(phase))
+const SCALES = [1.0, 0.775, 0.55];
 
-function drawSpeedIcon(size, speed) {
+// Identique à drawSpeedIcon() de background.js
+function drawSpeedIcon(size, speed, scale) {
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
@@ -28,25 +31,27 @@ function drawSpeedIcon(size, speed) {
     return new Promise(resolve => {
         base.onload = () => {
             ctx.drawImage(base, 0, 0, size, size);
-            const label = String(speed); // plus de "x" : l'icône en est déjà une
-            let fontSize = Math.floor(size * 0.84);
+            const r = size / 2;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(r, r, r - Math.max(1, size * 0.03), 0, Math.PI * 2);
+            ctx.clip();
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+            ctx.fillRect(0, 0, size, size);
+            ctx.restore();
+            const label = speed + 'x';
+            let fontSize = Math.floor(size * 0.85 * scale);
             ctx.font = `bold ${fontSize}px sans-serif`;
-            const pad = Math.max(2, Math.floor(fontSize * 0.2));
-            let textWidth = ctx.measureText(label).width;
-            const maxW = size - pad * 2 - 2;
-            if (textWidth > maxW) {
-                fontSize = Math.max(8, Math.floor(fontSize * maxW / textWidth));
+            const maxW = size * 0.8;
+            const textW = ctx.measureText(label).width;
+            if (textW > maxW) {
+                fontSize = Math.max(6, Math.floor(fontSize * maxW / textW));
                 ctx.font = `bold ${fontSize}px sans-serif`;
-                textWidth = ctx.measureText(label).width;
             }
-            const boxW = textWidth + pad * 2;
-            const boxH = fontSize + pad;
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            ctx.fillRect(size - boxW - 1, size - boxH - 1, boxW + 1, boxH + 1);
             ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(label, size - pad, size - pad);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, size / 2, size / 2 + fontSize * 0.05);
             resolve(canvas.toDataURL('image/png'));
         };
     });
@@ -55,18 +60,22 @@ function drawSpeedIcon(size, speed) {
 (async () => {
     const row = document.getElementById('row');
     for (const s of SPEEDS) {
-        for (const size of [48]) {
-            const url = await drawSpeedIcon(size, s);
+        for (const scale of SCALES) {
             const cell = document.createElement('div');
             cell.className = 'cell';
-            const img = new Image();
-            img.src = url;
-            img.style.width = size * 2 + 'px';
-            img.style.imageRendering = 'pixelated';
+            const img16 = new Image();
+            img16.src = await drawSpeedIcon(16, s, scale);
+            img16.style.width = '32px';
+            img16.style.imageRendering = 'pixelated';
+            const img48 = new Image();
+            img48.src = await drawSpeedIcon(48, s, scale);
+            img48.style.width = '96px';
+            img48.style.imageRendering = 'pixelated';
             const lbl = document.createElement('div');
             lbl.className = 'lbl';
-            lbl.textContent = s + 'x (icône ' + size + ')';
-            cell.appendChild(img);
+            lbl.textContent = s + 'x @' + Math.round(scale * 100) + '%';
+            cell.appendChild(img16);
+            cell.appendChild(img48);
             cell.appendChild(lbl);
             row.appendChild(cell);
         }
