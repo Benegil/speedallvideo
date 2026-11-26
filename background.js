@@ -8,66 +8,106 @@ function clampSpeed(s) {
     return Math.min(MAX_SPEED, Math.max(MIN_SPEED, s));
 }
 
-/* ---------- Icône dynamique : chiffre en grand, statique (pas de pulsing) ---------- */
+/* ---------- Icône dynamique : cadre blanc arrondi, texte plein cadre ----------
+   - Le cadre utilise TOUTE la surface (plus de cercle).
+   - Cadre blanc 1px, léger border-radius.
+   - Le texte occupe toute la hauteur du cadre moins 1px haut et bas.
+   - Si le label fait plus de 2 caractères, il défile horizontalement dans le cadre. */
 
-function drawSpeedIcon(size, speed) {
+function drawSpeedIcon(size, speed, offset) {
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
 
-    const base = new Image();
-    base.src = browser.runtime.getURL(`icon${size}.png`);
-    return new Promise(resolve => {
-        base.onload = () => {
-            ctx.drawImage(base, 0, 0, size, size);
+    // Fond sombre sur toute la surface + cadre blanc 1px légèrement arrondi.
+    const radius = Math.max(2, Math.round(size * 0.15));
+    const path = () => {
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0.5, 0.5, size - 1, size - 1, radius);
+        else ctx.rect(0.5, 0.5, size - 1, size - 1);
+    };
+    path();
+    ctx.fillStyle = '#1e1e1e';
+    ctx.fill();
+    path();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
-            // Fond sombre sur tout le cercle : lisible même à 16px dans la barre.
-            const r = size / 2;
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(r, r, r - Math.max(1, size * 0.03), 0, Math.PI * 2);
-            ctx.clip();
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-            ctx.fillRect(0, 0, size, size);
-            ctx.restore();
+    // Texte : hauteur = cadre − 1px haut et bas.
+    const label = `${speed}x`; // ex: "2x", "0.75x"
+    let fontSize = Math.max(4, size - 2);
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    const metrics = ctx.measureText(label);
+    const textW = metrics.width;
 
-            // Texte au centre ; la taille est réduite si nécessaire pour que le
-            // label entier (ex: "1.75x") tienne dans le cercle → pas de débordement
-            // ni d'animation.
-            const label = `${speed}x`; // ex: "2x", "0.75x"
-            let fontSize = Math.floor(size * 0.8);
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            const maxW = size * 0.72;
-            const textW = ctx.measureText(label).width;
-            if (textW > maxW) {
-                fontSize = Math.max(4, Math.floor(fontSize * maxW / textW));
-                ctx.font = `bold ${fontSize}px sans-serif`;
-            }
-            ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(label, size / 2, size / 2 + fontSize * 0.05);
-            resolve(canvas.toDataURL('image/png'));
-        };
-    });
+    ctx.save();
+    path();
+    ctx.clip(); // le texte défile à l'intérieur du cadre
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    if (label.length <= 2) {
+        // Label court : centré, pas de défilement.
+        ctx.fillText(label, (size - textW) / 2, size / 2);
+    } else {
+        // Défilement horizontal : le label traverse le cadre et recommence.
+        const innerW = size - 2;
+        const period = textW + innerW;
+        let x = innerW - (offset % period);
+        if (x < -textW) x += period;
+        ctx.fillText(label, x, size / 2);
+    }
+    ctx.restore();
+    return canvas.toDataURL('image/png');
+}
+
+let iconAnimTimer = null;
+let iconAnimPhase = 0;
+
+function stopIconAnim() {
+    if (iconAnimTimer) { clearInterval(iconAnimTimer); iconAnimTimer = null; }
 }
 
 async function updateActionIcon() {
     const speed = Math.round(currentSpeed * 100) / 100;
     if (speed === 1.0) {
         // Vitesse normale : X simple, pas d'animation
+        stopIconAnim();
         await browser.browserAction.setIcon({ path: { 32: 'icon32.png', 48: 'icon48.png' } });
         return;
     }
-    try {
-        await browser.browserAction.setIcon({
-            path: {
-                32: await drawSpeedIcon(32, speed),
-                48: await drawSpeedIcon(48, speed)
-            }
-        });
-    } catch (e) { /* onglet en cours de fermeture etc. */ }
+    const label = `${speed}x`;
+    if (label.length <= 2) {
+        // "2x", "4x"… : icône statique, pas de défilement.
+        stopIconAnim();
+        try {
+            await browser.browserAction.setIcon({
+                path: {
+                    16: drawSpeedIcon(16, speed, 0),
+                    32: drawSpeedIcon(32, speed, 0),
+                    48: drawSpeedIcon(48, speed, 0)
+                }
+            });
+        } catch (e) { /* onglet en cours de fermeture etc. */ }
+        return;
+    }
+    // Label long : défilement continu dans le cadre (~20 img/s).
+    if (!iconAnimTimer) {
+        iconAnimTimer = setInterval(async () => {
+            iconAnimPhase += 1.4;
+            try {
+                await browser.browserAction.setIcon({
+                    path: {
+                        16: drawSpeedIcon(16, speed, iconAnimPhase),
+                        32: drawSpeedIcon(32, speed, iconAnimPhase),
+                        48: drawSpeedIcon(48, speed, iconAnimPhase)
+                    }
+                });
+            } catch (e) { /* onglet en cours de fermeture etc. */ }
+        }, 50);
+    }
 }
 
 /* ---------- Diffusion de la vitesse à tous les onglets ---------- */

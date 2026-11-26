@@ -1,54 +1,51 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><style>body{background:#444;display:flex;flex-direction:column;gap:12px;padding:16px;font-family:sans-serif;color:#fff}</style></head>
+<html><head><meta charset="UTF-8"><style>body{background:#444;padding:16px;font-family:sans-serif;color:#fff} .row{display:flex;gap:8px;align-items:center;margin-bottom:14px} .lbl{width:70px}</style></head>
 <body>
-<div style="display:flex;gap:16px;align-items:center">
-  <span>1.75x :</span><img id="a32" width="96" height="96"><img id="a48" width="144" height="144">
-</div>
-<div style="display:flex;gap:16px;align-items:center">
-  <span>2x :</span><img id="b32" width="96" height="96"><img id="b48" width="144" height="144">
-</div>
-<div style="display:flex;gap:16px;align-items:center">
-  <span>0.25x :</span><img id="c32" width="96" height="96"><img id="c48" width="144" height="144">
-</div>
+<div class="row"><span class="lbl">2x (32):</span><img id="b32" width="96" height="96"></div>
+<div class="row"><span class="lbl">1.75x :</span><span id="a"></span></div>
+<div class="row"><span class="lbl">0.25x :</span><span id="c"></span></div>
 <script>
-async function drawSpeedIcon(size, speed) {
+function drawSpeedIcon(size, speed, offset) {
     const canvas = document.createElement('canvas');
     canvas.width = size; canvas.height = size;
     const ctx = canvas.getContext('2d');
-    const base = new Image();
-    base.src = `../icon${size}.png`;
-    await new Promise(r => base.onload = r);
-    ctx.drawImage(base, 0, 0, size, size);
-    const r = size / 2;
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(r, r, r - Math.max(1, size * 0.03), 0, Math.PI * 2);
-    ctx.clip();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-    ctx.fillRect(0, 0, size, size);
-    ctx.restore();
+    const radius = Math.max(2, Math.round(size * 0.15));
+    const path = () => {
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0.5, 0.5, size - 1, size - 1, radius);
+        else ctx.rect(0.5, 0.5, size - 1, size - 1);
+    };
+    path(); ctx.fillStyle = '#1e1e1e'; ctx.fill();
+    path(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.stroke();
     const label = `${speed}x`;
-    let fontSize = Math.floor(size * 0.8);
+    let fontSize = Math.max(4, size - 2);
     ctx.font = `bold ${fontSize}px sans-serif`;
-    const maxW = size * 0.72;
     const textW = ctx.measureText(label).width;
-    if (textW > maxW) {
-        fontSize = Math.max(4, Math.floor(fontSize * maxW / textW));
-        ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.save(); path(); ctx.clip();
+    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    if (label.length <= 2) {
+        ctx.fillText(label, (size - textW) / 2, size / 2);
+    } else {
+        const innerW = size - 2;
+        const period = textW + innerW;
+        let x = innerW - (offset % period);
+        if (x < -textW) x += period;
+        ctx.fillText(label, x, size / 2);
     }
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(label, size / 2, size / 2 + fontSize * 0.05);
+    ctx.restore();
     return canvas.toDataURL('image/png');
 }
-(async () => {
-    document.getElementById('a32').src = await drawSpeedIcon(32, 1.75);
-    document.getElementById('a48').src = await drawSpeedIcon(48, 1.75);
-    document.getElementById('b32').src = await drawSpeedIcon(32, 2);
-    document.getElementById('b48').src = await drawSpeedIcon(48, 2);
-    document.getElementById('c32').src = await drawSpeedIcon(32, 0.25);
-    document.getElementById('c48').src = await drawSpeedIcon(48, 0.25);
-})();
+function makeRow(id, speed) {
+    const span = document.getElementById(id);
+    for (let i = 0; i < 8; i++) {
+        const img = new Image();
+        img.width = 96; img.height = 96;
+        img.src = drawSpeedIcon(32, speed, i * 1.4);
+        span.appendChild(img);
+    }
+}
+document.getElementById('b32').src = drawSpeedIcon(32, 2, 0);
+makeRow('a', 1.75);
+makeRow('c', 0.25);
 </script>
 </body></html>
