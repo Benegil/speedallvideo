@@ -127,6 +127,39 @@ function positionAllOverlays() {
     });
 }
 
+/* ================= Badge global (aucune <video> sur la page) =================
+   Ex : YouTube n'insère son élément <video> qu'au clic sur Play. Tant qu'il
+   n'y a pas de vidéo, on affiche quand même la vitesse en haut à droite de
+   l'écran ; dès qu'une vidéo apparaît, le badge par-vidéo prend le relais. */
+function updateGlobalBadge(speed) {
+    // Une « vidéo visible » = un <video> avec une surface réelle (ex : sur
+    // YouTube l'élément n'existe pas avant le Play, ou peut être 0x0).
+    const hasVideo = Array.from(document.getElementsByTagName('video')).some(v => {
+        const r = v.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+    });
+    let badge = document.getElementById('sav-global');
+    if (!hasVideo) {
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.id = 'sav-global';
+            badge.className = 'sav-overlay';
+            badge.setAttribute('data-sav-owner', String(SAV_INSTANCE));
+            badge.style.cssText = 'position:fixed;top:8px;right:8px;z-index:2147483647;pointer-events:none;';
+            const label = document.createElement('span');
+            label.style.cssText = 'font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:12px;font-weight:600;color:#fff;white-space:nowrap;mix-blend-mode:difference;';
+            badge.appendChild(label);
+            (document.body || document.documentElement).appendChild(badge);
+        }
+        const label = badge.querySelector('span');
+        const text = `Speed ${speed}x`;
+        if (label.textContent !== text) label.textContent = text;
+        if (badge.style.display !== 'block') badge.style.display = 'block';
+    } else if (badge && badge.style.display !== 'none') {
+        badge.style.display = 'none'; // une vidéo est là : les badges par-vidéo reprennent
+    }
+}
+
 savListener(window, 'scroll', positionAllOverlays, { passive: true });
 savListener(window, 'resize', positionAllOverlays);
 
@@ -154,6 +187,7 @@ function applySpeedToAllVideos(speed, showFlash = false) {
     });
     if (changed) console.log(`Applying playback speed ${speed} to ${changed}/${videos.length} video(s)`);
     positionAllOverlays();
+    updateGlobalBadge(speed); // badge global tant qu'aucune vidéo n'existe
 }
 
 // Met à jour l'affichage de la vitesse pour une vidéo.
