@@ -1,80 +1,305 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpeedAllVideo — Réglages</title>
-    <style>
-        :root {
-            --background-color: #ffffff;
-            --text-color: #000000;
-            --input-bg: #f0f0f0;
-            --button-bg: #0060df;
-            --button-text: #ffffff;
-            --status-text: #000;
-        }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpeedAllVideo — Réglages</title>
+<style>
+  :root {
+    --bg: #f5f5f5;
+    --card-bg: #ffffff;
+    --text: #222;
+    --text-secondary: #666;
+    --border: #e0e0e0;
+    --primary: #0060df;
+    --primary-hover: #0047b3;
+    --accent: #ff5a10;
+    --accent-hover: #e04d0a;
+    --btn-bg: #f0f0f0;
+    --btn-text: #222;
+    --btn-border: #ccc;
+    --slider-track: #ddd;
+    --slider-thumb: #0060df;
+    --shortcut-bg: #f7f7f7;
+    --shortcut-key-bg: #e8e8e8;
+    --shortcut-key-text: #333;
+    --status-ok: #28a745;
+    --shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
 
-        body {
-            font-family: sans-serif;
-            padding: 20px;
-            max-width: 500px;
-            margin: 0 auto;
-            background-color: var(--background-color);
-            color: var(--text-color);
-        }
-        label, input, button {
-            display: block;
-            width: 100%;
-            margin-bottom: 10px;
-        }
-        input[type="number"] {
-            font-size: 16px;
-            padding: 5px;
-            background-color: var(--input-bg);
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            color: var(--text-color);
-        }
-        button {
-            background-color: var(--button-bg);
-            color: var(--button-text);
-            border: none;
-            padding: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        button:hover {
-            opacity: 0.9;
-        }
-        #status {
-            margin-top: 20px;
-            font-weight: bold;
-            color: var(--status-text);
-        }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a;
+      --card-bg: #2a2a2a;
+      --text: #e0e0e0;
+      --text-secondary: #999;
+      --border: #444;
+      --primary: #6ea8fe;
+      --primary-hover: #5a93e0;
+      --accent: #ff7b33;
+      --accent-hover: #e56a25;
+      --btn-bg: #3a3a3a;
+      --btn-text: #e0e0e0;
+      --btn-border: #555;
+      --slider-track: #555;
+      --slider-thumb: #6ea8fe;
+      --shortcut-bg: #333;
+      --shortcut-key-bg: #444;
+      --shortcut-key-text: #ddd;
+      --status-ok: #5cdb7a;
+      --shadow: 0 1px 4px rgba(0,0,0,.3);
+    }
+  }
 
-        /* Dark Mode Styles */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --background-color: #121212;
-                --text-color: #ffffff;
-                --input-bg: #1e1e1e;
-                --button-bg: #bb86fc;
-                --button-text: #000000;
-                --status-text: #ffffff;
-            }
-            input[type="number"] {
-                border: 1px solid #555;
-            }
-        }
-    </style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 24px 12px;
+    min-height: 100vh;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 360px;
+    padding: 24px 20px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--primary);
+  }
+
+  /* ---- Section vitesse courante ---- */
+  .speed-section {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .speed-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 4px;
+  }
+
+  .speed-value {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+
+  /* ---- Slider ---- */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .slider-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: background .15s;
+  }
+  .slider-btn:hover { background: var(--primary-hover); }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    min-width: 0;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--slider-track);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--slider-thumb);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--slider-thumb);
+    cursor: pointer;
+    border: none;
+  }
+
+  /* ---- Boutons de vitesse prédéfinis ---- */
+  .presets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .preset-btn {
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    border: 1px solid var(--btn-border);
+    border-radius: 6px;
+    padding: 8px 0;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  .preset-btn:hover {
+    border-color: var(--primary);
+  }
+  .preset-btn.active {
+    border-color: var(--primary);
+    box-shadow: inset 0 0 0 1px var(--primary);
+  }
+
+  /* ---- Reset ---- */
+  .reset-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .reset-btn:hover { background: var(--accent-hover); }
+
+  /* ---- Section raccourcis ---- */
+  .shortcuts {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .shortcuts h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+  }
+  .shortcut-list {
+    list-style: none;
+  }
+  .shortcut-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+  }
+  .shortcut-key {
+    background: var(--shortcut-key-bg);
+    color: var(--shortcut-key-text);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 42px;
+    text-align: center;
+    margin-right: 12px;
+    font-family: monospace;
+  }
+  .shortcut-desc {
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  /* ---- Status ---- */
+  #status {
+    text-align: center;
+    margin-top: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--status-ok);
+    min-height: 20px;
+  }
+</style>
 </head>
 <body>
-<h1>Playback Speed Settings</h1>
-<label for="defaultSpeed">Default Playback Speed:</label>
-<input type="number" id="defaultSpeed" min="0.25" max="4" step="0.25" value="1">
-    <button id="save">Save</button>
-    <div id="status"></div>
-    <script src="options.js"></script>
+
+<div class="card">
+  <h1>SpeedAllVideo</h1>
+
+  <!-- Vitesse courante -->
+  <div class="speed-section">
+    <div class="speed-label">Current Speed</div>
+    <div class="speed-value" id="currentSpeed">1.00x</div>
+
+    <div class="slider-row">
+      <button class="slider-btn" id="minusBtn">−</button>
+      <input type="range" id="speedSlider" min="0.25" max="4" step="0.25" value="1">
+      <button class="slider-btn" id="plusBtn">+</button>
+    </div>
+
+    <!-- Boutons prédéfinis -->
+    <div class="presets">
+      <button class="preset-btn" data-speed="0.25">0.25</button>
+      <button class="preset-btn" data-speed="0.5">0.5</button>
+      <button class="preset-btn" data-speed="1.0">1.0</button>
+      <button class="preset-btn" data-speed="1.5">1.5</button>
+      <button class="preset-btn" data-speed="2.0">2.0</button>
+      <button class="preset-btn" data-speed="3.0">3.0</button>
+    </div>
+
+    <!-- Reset -->
+    <button class="reset-btn" id="resetBtn">Reset (1.0x)</button>
+  </div>
+
+  <!-- Raccourcis clavier -->
+  <div class="shortcuts">
+    <h2>Keyboard Shortcuts</h2>
+    <ul class="shortcut-list">
+      <li class="shortcut-item">
+        <span class="shortcut-key">S</span>
+        <span class="shortcut-desc">Slow down (−0.25x)</span>
+      </li>
+      <li class="shortcut-item">
+        <span class="shortcut-key">D</span>
+        <span class="shortcut-desc">Speed up (+0.25x)</span>
+      </li>
+      <li class="shortcut-item">
+        <span class="shortcut-key">R</span>
+        <span class="shortcut-desc">Reset speed (1x)</span>
+      </li>
+    </ul>
+  </div>
+
+  <div id="status"></div>
+</div>
+
+<script src="options.js"></script>
 </body>
 </html>

@@ -1,25 +1,80 @@
-function saveOptions(e) {
-    e.preventDefault();
-    let speed = parseFloat(document.getElementById('defaultSpeed').value);
-    browser.storage.sync.set({
-        defaultSpeed: speed
-    }).then(() => {
-        let status = document.getElementById('status');
-        status.textContent = 'Options saved.';
-        setTimeout(() => {
-            status.textContent = '';
-        }, 750);
+document.addEventListener('DOMContentLoaded', function() {
+    const slider = document.getElementById('speedSlider');
+    const speedDisplay = document.getElementById('currentSpeed');
+    const minusBtn = document.getElementById('minusBtn');
+    const plusBtn = document.getElementById('plusBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const statusEl = document.getElementById('status');
+    const presetBtns = document.querySelectorAll('.preset-btn');
 
-        // Notify background script to update speed
-        browser.runtime.sendMessage({action: 'setSpeed', speed: speed});
+    const MIN_SPEED = 0.25;
+    const MAX_SPEED = 4;
+    const STEP = 0.25;
+
+    function clampSpeed(s) {
+        return Math.min(MAX_SPEED, Math.max(MIN_SPEED, s));
+    }
+
+    function updateDisplay(speed) {
+        speedDisplay.textContent = speed.toFixed(2) + 'x';
+        slider.value = speed;
+        // Mettre à jour le bouton actif des presets
+        presetBtns.forEach(btn => {
+            const val = parseFloat(btn.dataset.speed);
+            btn.classList.toggle('active', Math.abs(val - speed) < 0.001);
+        });
+    }
+
+    function setStatus(msg, duration) {
+        statusEl.textContent = msg;
+        if (duration) {
+            setTimeout(() => { statusEl.textContent = ''; }, duration);
+        }
+    }
+
+    function setSpeed(speed) {
+        speed = clampSpeed(speed);
+        updateDisplay(speed);
+        browser.runtime.sendMessage({ action: 'setSpeed', speed: speed });
+        setStatus('✓ Speed updated', 750);
+    }
+
+    // Charger la vitesse actuelle depuis le background script
+    browser.runtime.sendMessage({ action: 'getCurrentSpeed' }, (response) => {
+        if (response && response.speed) {
+            updateDisplay(response.speed);
+        }
     });
-}
 
-function restoreOptions() {
-    browser.storage.sync.get('defaultSpeed').then((res) => {
-        document.getElementById('defaultSpeed').value = res.defaultSpeed || 1;
+    // Slider
+    slider.addEventListener('input', function() {
+        setSpeed(parseFloat(this.value));
     });
-}
 
-document.addEventListener('DOMContentLoaded', restoreOptions);
-document.getElementById('save').addEventListener('click', saveOptions);
+    // Boutons +/-
+    minusBtn.addEventListener('click', () => {
+        browser.runtime.sendMessage({ action: 'getCurrentSpeed' }, (response) => {
+            const current = response && response.speed ? response.speed : 1;
+            setSpeed(current - STEP);
+        });
+    });
+
+    plusBtn.addEventListener('click', () => {
+        browser.runtime.sendMessage({ action: 'getCurrentSpeed' }, (response) => {
+            const current = response && response.speed ? response.speed : 1;
+            setSpeed(current + STEP);
+        });
+    });
+
+    // Boutons presets
+    presetBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            setSpeed(parseFloat(btn.dataset.speed));
+        });
+    });
+
+    // Reset
+    resetBtn.addEventListener('click', () => {
+        setSpeed(1.0);
+    });
+});
