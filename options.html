@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeedyVideo Extension Settings</title>
+    <style>
+        :root {
+            --background-color: #ffffff;
+            --text-color: #000000;
+            --input-bg: #f0f0f0;
+            --button-bg: #0060df;
+            --button-text: #ffffff;
+            --status-text: #000;
+        }
+
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        label, input, button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        input[type="number"] {
+            font-size: 16px;
+            padding: 5px;
+            background-color: var(--input-bg);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            color: var(--text-color);
+        }
+        button {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+            color: var(--status-text);
+        }
+
+        /* Dark Mode Styles */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #121212;
+                --text-color: #ffffff;
+                --input-bg: #1e1e1e;
+                --button-bg: #bb86fc;
+                --button-text: #000000;
+                --status-text: #ffffff;
+            }
+            input[type="number"] {
+                border: 1px solid #555;
+            }
+        }
+    </style>
+</head>
+<body>
+<h1>Playback Speed Settings</h1>
+<label for="defaultSpeed">Default Playback Speed:</label>
+<input type="number" id="defaultSpeed" min="0.25" max="16" step="0.25" value="1">
+    <button id="save">Save</button>
+    <div id="status"></div>
+    <script src="options.js"></script>
+</body>
+</html>
