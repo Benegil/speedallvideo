@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hideBadge = $('hideBadge');
     const hideFlash = $('hideFlash');
     const soundFx = $('soundFx');
+    const withAudio = $('withAudio');
     const status = $('status');
     const presets = [...document.querySelectorAll('.preset')];
 
@@ -52,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Chargement initial depuis le stockage sync (lu par les content scripts)
     applyStep(); // descriptions S/D traduites dès l'ouverture
-    browser.storage.sync.get(['speedStep', 'forceOneX', 'hideBadge', 'hideFlash', 'soundFx']).then(res => {
+    browser.storage.sync.get(['speedStep', 'forceOneX', 'hideBadge', 'hideFlash', 'soundFx', 'withAudio']).then(res => {
         if (res.speedStep !== undefined && res.speedStep !== '') {
             stepInput.value = res.speedStep;
             applyStep();
@@ -61,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hideBadge.checked = !!res.hideBadge;
         hideFlash.checked = !!res.hideFlash;
         soundFx.checked = res.soundFx !== false; // activé par défaut
+        withAudio.checked = !!res.withAudio;     // désactivé par défaut
     });
 
     // Vitesse actuelle depuis le background
@@ -119,6 +121,11 @@ document.addEventListener('DOMContentLoaded', () => {
         browser.storage.sync.set({ soundFx: soundFx.checked });
         if (soundFx.checked) blip(current, current); // aperçu du son
         flash(t(soundFx.checked ? 'soundFxOn' : 'soundFxOff'), 750);
+    });
+
+    withAudio.addEventListener('change', () => {
+        browser.storage.sync.set({ withAudio: withAudio.checked });
+        flash(t(withAudio.checked ? 'withAudioOn' : 'withAudioOff'), 750);
     });
 
     // Reset : retour à l'état « rien de forcé » — vitesse 1x ET Force 1x désactivé.

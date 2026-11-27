@@ -17,6 +17,8 @@ SpeedAllVideo sets the speed of any HTML5 video from **0.25x to 4x**: YouTube, T
 • Neutral on install: nothing changes until you pick a speed
 • French and English interface
 
+🎧 *Podcasts: turn on the "Audio" option (off by default) to speed up the audio players of web pages too. It may well work for your favourite podcasts: give it a try and let us know in the reviews!*
+
 **Privacy**: no data collected, no network access. Permissions limited to "tabs" (to share the speed) and "storage" (to remember your settings).
 
 💡 *A lightweight alternative to Video Speed Controller, Global Speed or Enhancer for YouTube's speed setting, focused on one thing: speed, everywhere.*

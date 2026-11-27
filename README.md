@@ -14,6 +14,7 @@ Dérivée de [SpeedyVideo](https://addons.mozilla.org/fr/firefox/addon/speedy-vi
 - **Neutre à l'installation** : rien n'est modifié tant qu'aucune vitesse n'a été choisie.
 - **Force 1x** : force la vitesse à 1.0x et mémorise celle choisie dans le lecteur du site (restaurée à la désactivation).
 - **Raccourcis clavier** (hors champs de saisie) : `S` ralentir, `D` accélérer, `R` retour à 1x — pas réglable dans les options.
+- **Audio** (option, désactivée par défaut) : applique aussi la vitesse aux lecteurs `<audio>` des pages (podcasts, livres audio).
 - **Interface** en français et en anglais (suit la langue du navigateur).
 
 ## Installation (développement)
@@ -48,6 +49,7 @@ Le lanceur (`tools/run-tests.mjs`) utilise Google Chrome ou Chromium installé (
 | `flash-test.html` | Grand affichage dimensionné sur la vidéo |
 | `display-test.html` | Options masquer badge / grand affichage |
 | `sound-test.html` | Signal sonore (option, hauteur, plein écran de la vidéo) |
+| `audio-test.html` | Option Audio : lecteurs `<audio>` inclus / remis à 1x |
 | `force-test.html` / `overlay-test.html` | Pas à pas manuels |
 
 ## Paquet
@@ -83,6 +85,7 @@ La fiche AMO (description longue fr/en, captures) est dans `amo/`. Pour régén�
 | `hideBadge` | false | Masque le badge permanent |
 | `hideFlash` | false | Masque le grand affichage au changement |
 | `soundFx` | true | Signal sonore (icône du popup = case des options) |
+| `withAudio` | false | Inclut les lecteurs `<audio>` |
 
 ## Licence
 

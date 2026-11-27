@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Plein écran** : badge et grand affichage rangés dans l'élément plein écran.
 - **Signal sonore** façon jeu vidéo (hauteur = vitesse) : raccourcis, boutons du popup et des options ; icône haut-parleur dans le popup ; joué d'office quand la vidéo elle-même est en plein écran.
 - **Options d'affichage** : masquer le badge permanent, masquer le grand affichage au changement.
+- **Option Audio** (désactivée par défaut) : la vitesse s'applique aussi aux lecteurs `<audio>` (podcasts).
 - **Interface multilingue** français / anglais (`_locales/`, `i18n.js`).
 - **Neutre à l'installation** : aucune vitesse imposée tant qu'aucune n'a été choisie.
 - Fiche AMO (`amo/`), script de tests automatiques (`npm test`) et de construction du paquet (`npm run build`).

@@ -17,6 +17,8 @@ SpeedAllVideo règle la vitesse de n'importe quelle vidéo HTML5 de **0.25x à 4
 • Neutre à l'installation : rien n'est modifié tant que vous n'avez pas choisi de vitesse
 • Interface en français et en anglais
 
+🎧 *Podcasts : activez l'option « Audio » (désactivée par défaut) pour accélérer aussi les lecteurs audio des pages. Il est possible que ça fonctionne pour vos podcasts préférés : à vous de faire l'essai, et de nous le signaler dans les commentaires !*
+
 **Vie privée** : aucune donnée collectée, aucune connexion réseau. Permissions limitées à « onglets » (diffuser la vitesse) et « stockage » (mémoriser vos réglages).
 
 💡 *Une alternative légère à Video Speed Controller, Global Speed ou au réglage de vitesse d'Enhancer for YouTube, centrée sur une seule chose : la vitesse, partout.*

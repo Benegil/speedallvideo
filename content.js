@@ -8,6 +8,7 @@ let force1x = false;  // option « Force 1x »
 let hideBadge = false;   // option : masquer le badge permanent en haut à droite
 let hideFlash = false;   // option : masquer le flash central au changement
 let soundFx = true;      // option : signal sonore au changement (activé par défaut)
+let withAudio = false;   // option : appliquer aussi aux lecteurs <audio> (podcasts…), désactivée par défaut
 let ready = false;    // stockage chargé : avant ça, on n'écrase rien (fix rechargement → 1x)
 let lastSet = 1.0;    // dernière vitesse posée par nous (anti-écho de la détection)
 let lastForced = null;// dernière vitesse du site lue pendant le forcage
@@ -125,9 +126,12 @@ function scanRoots() {
     visit(document);
     for (const r of Array.from(roots)) visit(r);
 }
+// Médias pris en charge : <video>, et <audio> si l'option est cochée.
+const MEDIA = () => withAudio ? 'video, audio' : 'video';
+const isMedia = el => !!el && (el.tagName === 'VIDEO' || (withAudio && el.tagName === 'AUDIO'));
 function allVideos() {
-    const out = Array.from(document.getElementsByTagName('video'));
-    for (const r of roots) if (r.host.isConnected) out.push(...r.querySelectorAll('video'));
+    const out = Array.from(document.querySelectorAll(MEDIA()));
+    for (const r of roots) if (r.host.isConnected) out.push(...r.querySelectorAll(MEDIA()));
     return out;
 }
 // Parent « à travers » les shadow roots (parentElement s'arrête à leur bord).
@@ -478,7 +482,7 @@ const CLICK_SEQ_MS = 5000;    // deux clics de menu en moins de 5 s
 let lastClickAt = 0, prevClickAt = 0, lastKeyAt = 0;
 on(document, 'pointerdown', () => { prevClickAt = lastClickAt; lastClickAt = performance.now(); }, true);
 on(document, 'keydown', e => { if (!/^[sdr]$/i.test(e.key)) lastKeyAt = performance.now(); }, true); // pas nos raccourcis
-const markInit = e => { if (e.target && e.target.tagName === 'VIDEO') e.target._savInitAt = performance.now(); };
+const markInit = e => { if (isMedia(e.target)) e.target._savInitAt = performance.now(); };
 ['loadstart', 'loadedmetadata'].forEach(t => on(document, t, markInit, true));
 
 function siteMayAdopt(v, r) {
@@ -554,7 +558,7 @@ const obs = new MutationObserver(ms => {
     // compteurs…) ré-appliquerait sinon `speed` en boucle et écraserait la
     // vitesse que le site vient de poser avant que detect() ne la lise.
     const hasVideo = n => n.nodeType === 1 && !(n.classList && n.classList.contains('sav-overlay')) &&
-        (n.tagName === 'VIDEO' || n.getElementsByTagName('video').length || n.shadowRoot);
+        (isMedia(n) || n.querySelector(MEDIA()) || n.shadowRoot);
     if (ms.some(m => Array.from(m.removedNodes).some(hasVideo))) fitAll(); // vidéo retirée → overlay orphelin nettoyé
     const relevant = ms.some(m => Array.from(m.addedNodes).some(n => hasVideo(n) && !n.closest('.sav-overlay')));
     if (!relevant || pending) return;
@@ -575,7 +579,7 @@ scanRoots();
    reprise de lecture ne doit pas écraser une vitesse choisie par le site. */
 const kick = e => {
     const v = e.target;
-    if (dead || !ready || !v || v.tagName !== 'VIDEO' || v._savOverlay) return;
+    if (dead || !ready || !isMedia(v) || v._savOverlay) return;
     apply(force1x ? 1.0 : speed);
 };
 ['loadedmetadata', 'play', 'playing'].forEach(t => on(document, t, kick, true));
@@ -600,8 +604,9 @@ browser.runtime.onMessage.addListener(msg => {
    même chargé son stockage → il renvoyait 1.0 et la vidéo (ex : à 0.25x)
    passait « tout de suite à 1x ». ready est levé ICI ; en attendant, ni la
    boucle ni l'observer n'écrasent la vitesse réelle. */
-browser.storage.sync.get(['forceOneX', 'speedStep', 'defaultSpeed', 'hideBadge', 'hideFlash', 'soundFx']).then(res => {
+browser.storage.sync.get(['forceOneX', 'speedStep', 'defaultSpeed', 'hideBadge', 'hideFlash', 'soundFx', 'withAudio']).then(res => {
     soundFx = res.soundFx !== false;
+    withAudio = !!res.withAudio;
     force1x = !!res.forceOneX;
     hideBadge = !!res.hideBadge;
     hideFlash = !!res.hideFlash;
@@ -639,6 +644,17 @@ browser.storage.onChanged.addListener(changes => {
         if (s > 0 && s <= MAX) step = s;
     }
     if (changes.soundFx) soundFx = changes.soundFx.newValue !== false;
+    if (changes.withAudio) {
+        withAudio = !!changes.withAudio.newValue;
+        if (!withAudio) { // désactivée : les lecteurs audio reviennent à 1x, sans badge
+            const audios = [...document.getElementsByTagName('audio')];
+            for (const r of roots) if (r.host.isConnected) audios.push(...r.querySelectorAll('audio'));
+            audios.forEach(a => {
+                try { a.defaultPlaybackRate = 1; a.playbackRate = 1; } catch (e) {}
+                if (a._savOverlay) { a._savOverlay.remove(); a._savOverlay = null; a._savLabel = null; }
+            });
+        } else if (ready) apply(force1x ? 1.0 : speed);
+    }
     if (changes.hideBadge || changes.hideFlash) {
         if (changes.hideBadge) {
             hideBadge = !!changes.hideBadge.newValue;

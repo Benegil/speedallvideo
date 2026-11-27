@@ -113,5 +113,20 @@
   },
   "unmuteAria": {
     "message": "Activer le son des boutons"
+  },
+  "audioTitle": {
+    "message": "Audio"
+  },
+  "withAudioLabel": {
+    "message": "Accélérer aussi les lecteurs audio"
+  },
+  "withAudioHint": {
+    "message": "Désactivé par défaut. Applique aussi la vitesse aux lecteurs audio des pages (podcasts, livres audio…). Les sons qu'un site joue sans lecteur dans la page ne sont pas concernés."
+  },
+  "withAudioOn": {
+    "message": "✓ Lecteurs audio inclus"
+  },
+  "withAudioOff": {
+    "message": "Lecteurs audio remis à 1x"
   }
 }

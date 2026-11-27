@@ -113,5 +113,20 @@
   },
   "unmuteAria": {
     "message": "Turn button sounds on"
+  },
+  "audioTitle": {
+    "message": "Audio"
+  },
+  "withAudioLabel": {
+    "message": "Also speed up audio players"
+  },
+  "withAudioHint": {
+    "message": "Off by default. Applies the speed to the audio players of web pages too (podcasts, audiobooks…). Sounds a site plays without an audio player on the page are not affected."
+  },
+  "withAudioOn": {
+    "message": "✓ Audio players included"
+  },
+  "withAudioOff": {
+    "message": "Audio players back to 1x"
   }
 }
