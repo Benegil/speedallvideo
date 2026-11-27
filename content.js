@@ -7,7 +7,7 @@ let step = 0.25;      // pas de réglage (options)
 let force1x = false;  // option « Force 1x »
 let hideBadge = false;   // option : masquer le badge permanent en haut à droite
 let hideFlash = false;   // option : masquer le flash central au changement
-let soundFx = false;     // option : signal sonore au changement (raccourcis)
+let soundFx = true;      // option : signal sonore au changement (activé par défaut)
 let ready = false;    // stockage chargé : avant ça, on n'écrase rien (fix rechargement → 1x)
 let lastSet = 1.0;    // dernière vitesse posée par nous (anti-écho de la détection)
 let lastForced = null;// dernière vitesse du site lue pendant le forcage
@@ -593,7 +593,7 @@ browser.runtime.onMessage.addListener(msg => {
    passait « tout de suite à 1x ». ready est levé ICI ; en attendant, ni la
    boucle ni l'observer n'écrasent la vitesse réelle. */
 browser.storage.sync.get(['forceOneX', 'speedStep', 'defaultSpeed', 'hideBadge', 'hideFlash', 'soundFx']).then(res => {
-    soundFx = !!res.soundFx;
+    soundFx = res.soundFx !== false;
     force1x = !!res.forceOneX;
     hideBadge = !!res.hideBadge;
     hideFlash = !!res.hideFlash;
@@ -630,7 +630,7 @@ browser.storage.onChanged.addListener(changes => {
         const s = parseFloat(changes.speedStep.newValue);
         if (s > 0 && s <= MAX) step = s;
     }
-    if (changes.soundFx) soundFx = !!changes.soundFx.newValue;
+    if (changes.soundFx) soundFx = changes.soundFx.newValue !== false;
     if (changes.hideBadge || changes.hideFlash) {
         if (changes.hideBadge) {
             hideBadge = !!changes.hideBadge.newValue;

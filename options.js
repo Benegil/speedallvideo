@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         forceOneX.checked = !!res.forceOneX;
         hideBadge.checked = !!res.hideBadge;
         hideFlash.checked = !!res.hideFlash;
-        soundFx.checked = !!res.soundFx;
+        soundFx.checked = res.soundFx !== false; // activé par défaut
     });
 
     // Vitesse actuelle depuis le background
@@ -113,6 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
         flash(t(hideFlash.checked ? 'hideFlashOn' : 'hideFlashOff'), 750);
     });
 
+    // Synchro avec l'icône haut-parleur du popup (même réglage)
+    browser.storage.onChanged.addListener(ch => { if (ch.soundFx) soundFx.checked = ch.soundFx.newValue !== false; });
     soundFx.addEventListener('change', () => {
         browser.storage.sync.set({ soundFx: soundFx.checked });
         if (soundFx.checked) blip(current, current); // aperçu du son

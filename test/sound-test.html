@@ -100,12 +100,16 @@ document.write('<script src="../sound.js"><\/script><script src="../content.js">
     const add = (name, ok, d) => { const li = document.createElement('li'); li.textContent = `${name} — ${ok ? 'OK' : 'ÉCHEC'} (${d})`; ol.appendChild(li); };
     const key = k => document.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
     await sleep(1300);
+    key('d'); await sleep(100); // 1.5 → 1.75, rien en stockage
+    add('T0 — son activé par défaut (rien en mémoire)', blips.length === 1, `blips=${blips.length}`);
+    blips.length = 0;
+    await browser.storage.sync.set({ soundFx: false });
     key('d'); await sleep(100);
     add('T1 — option désactivée : silence', blips.length === 0, `blips=${blips.length}`);
     await browser.storage.sync.set({ soundFx: true });
-    key('d'); await sleep(100); // 1.75 → 2
+    key('d'); await sleep(100); // 2 → 2.25
     const up = blips[blips.length - 1];
-    add('T2 — accélérer : blip qui monte (1.75x → 2x)', blips.length === 1 && up.from === 440 * 1.75 && up.to === 880, `${up && up.from} → ${up && up.to} Hz`);
+    add('T2 — accélérer : blip qui monte (2x → 2.25x)', blips.length === 1 && up.from === 880 && up.to === 440 * 2.25, `${up && up.from} → ${up && up.to} Hz`);
     key('s'); await sleep(100); // 2 → 1.75
     const down = blips[blips.length - 1];
     add('T3 — ralentir : blip qui descend', blips.length === 2 && down.to < down.from, `${down && down.from} → ${down && down.to} Hz`);

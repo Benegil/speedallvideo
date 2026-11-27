@@ -31,7 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { status.textContent = ''; }, ms);
     }
 
-    // Son des boutons : activé par défaut, coupé via l'icône haut-parleur.
+    // Son : MÊME réglage que la case « Signal sonore » des options (soundFx),
+    // activé par défaut ; l'icône haut-parleur le coupe / le rétablit.
     let sound = true;
     const mute = $('mute');
     function renderMute() {
@@ -40,10 +41,11 @@ document.addEventListener('DOMContentLoaded', () => {
         mute.title = t(sound ? 'muteAria' : 'unmuteAria');
     }
     renderMute();
-    browser.storage.sync.get('popupSound').then(res => { sound = res.popupSound !== false; renderMute(); });
+    browser.storage.sync.get('soundFx').then(res => { sound = res.soundFx !== false; renderMute(); });
+    browser.storage.onChanged.addListener(ch => { if (ch.soundFx) { sound = ch.soundFx.newValue !== false; renderMute(); } });
     mute.addEventListener('click', () => {
         sound = !sound;
-        browser.storage.sync.set({ popupSound: sound });
+        browser.storage.sync.set({ soundFx: sound });
         renderMute();
         if (sound) blip(current, current); // confirmation : on entend le son réactivé
     });

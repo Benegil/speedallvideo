@@ -63,13 +63,14 @@
   .mute {
     width: 28px; height: 28px; padding: 4px;
     border: none; border-radius: 6px; background: transparent;
-    color: var(--sub); cursor: pointer; line-height: 0;
+    color: var(--primary); cursor: pointer; line-height: 0; /* bleu : son activé */
     transition: background .15s, color .15s;
   }
   .mute:hover { background: var(--card); color: var(--primary); }
   .mute svg { width: 20px; height: 20px; }
   .mute .waves, .mute .cross { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
   .mute .cross { display: none; }
+  .mute.off { color: var(--sub); } /* gris : son coupé */
   .mute.off .waves { display: none; }
   .mute.off .cross { display: inline; }
   h1 { font-size: 17px; font-weight: 700; color: var(--primary); }

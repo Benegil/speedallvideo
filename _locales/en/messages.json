@@ -100,7 +100,7 @@
     "message": "Sound cue on speed change"
   },
   "soundFxHint": {
-    "message": "A short game-like \"blip\" when you use S / D / R: higher pitch = faster. Always played when the video itself is fullscreen (nothing can be displayed over it)."
+    "message": "A short game-like \"blip\" on every change (S / D / R shortcuts, buttons): higher pitch = faster. Also toggled by the speaker icon in the menu. Always played when the video itself is fullscreen (nothing can be displayed over it)."
   },
   "soundFxOn": {
     "message": "✓ Sound cue enabled"
