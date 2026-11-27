@@ -2,7 +2,7 @@
 /* SpeedAllVideo — régénère les captures de la fiche AMO (amo/screenshots/,
    1280×800, fr + en) : grand affichage sur une vidéo, badge + popup, options.
    Usage : npm run screenshots
-   Requiert ffmpeg (vidéo de démonstration générée : un dégradé, sans droits)
+   Requiert ffmpeg (fond : amo/screenshot-bg.jpg, libre de droits ; sinon dégradé)
    et Google Chrome / Chromium (variable CHROME pour un autre chemin). */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -26,9 +26,13 @@ const exe = process.env.CHROME || ['/usr/bin/google-chrome', '/usr/bin/google-ch
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].find(p => fs.existsSync(p));
 if (!exe) { console.error('Chrome/Chromium introuvable : définir CHROME=/chemin/vers/chrome'); process.exit(2); }
 
-// Vidéo de démonstration : dégradé « coucher de soleil » animé (6 s, H.264)
-execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i',
-    'gradients=s=1280x720:c0=0x0f2027:c1=0x203a43:c2=0x2c5364:c3=0xf2733d:nb_colors=4:x0=0:y0=0:x1=1280:y1=720:speed=0.02:duration=6:rate=30',
+// Vidéo de démonstration : amo/screenshot-bg.jpg (image libre de droits) mise
+// en vidéo de 6 s ; à défaut, un dégradé animé généré.
+const BGIMG = join(R, 'amo', 'screenshot-bg.jpg');
+execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y',
+    ...(fs.existsSync(BGIMG)
+        ? ['-loop', '1', '-i', BGIMG, '-t', '6', '-r', '30', '-vf', 'scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720']
+        : ['-f', 'lavfi', '-i', 'gradients=s=1280x720:c0=0x0f2027:c1=0x203a43:c2=0x2c5364:c3=0xf2733d:nb_colors=4:x0=0:y0=0:x1=1280:y1=720:speed=0.02:duration=6:rate=30']),
     '-c:v', 'libx264', '-pix_fmt', 'yuv420p', join(SH, 'demo.mp4')]);
 
 // Pages de mise en scène
