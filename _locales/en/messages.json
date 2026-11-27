@@ -1,0 +1,72 @@
+{
+  "extDescription": {
+    "message": "Control the playback speed of every video, in all tabs, from 0.25x to 4x"
+  },
+  "optionsTitle": {
+    "message": "SpeedAllVideo — Settings"
+  },
+  "currentSpeed": {
+    "message": "Current Speed"
+  },
+  "slowDownAria": {
+    "message": "Slow down"
+  },
+  "speedUpAria": {
+    "message": "Speed up"
+  },
+  "resetBtn": {
+    "message": "Reset (1.0x)"
+  },
+  "shortcuts": {
+    "message": "Keyboard Shortcuts"
+  },
+  "slowDown": {
+    "message": "Slow down (−$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "speedUp": {
+    "message": "Speed up (+$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetSpeed": {
+    "message": "Reset speed (1x)"
+  },
+  "speedUpdated": {
+    "message": "✓ Speed updated"
+  },
+  "speedStep": {
+    "message": "Speed Step"
+  },
+  "stepHint": {
+    "message": "Step used by the ± buttons and the S / D shortcuts (e.g. 0.10, 0.25, 0.5)"
+  },
+  "invalidStep": {
+    "message": "Invalid step (use 0.01 – 4)"
+  },
+  "stepSaved": {
+    "message": "✓ Speed Step saved"
+  },
+  "force1xTitle": {
+    "message": "Force 1x"
+  },
+  "force1xLabel": {
+    "message": "Force speed to 1.0x"
+  },
+  "force1xHint": {
+    "message": "The extension watches the video and puts the speed back to 1.0x if it changes (useful when a site forces its own speed, e.g. 2x)"
+  },
+  "force1xOn": {
+    "message": "✓ Force 1x enabled"
+  },
+  "force1xOff": {
+    "message": "Force 1x disabled"
+  }
+}

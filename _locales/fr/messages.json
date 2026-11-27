@@ -1,0 +1,72 @@
+{
+  "extDescription": {
+    "message": "Règle la vitesse de toutes les vidéos, dans tous les onglets, de 0,25x à 4x"
+  },
+  "optionsTitle": {
+    "message": "SpeedAllVideo — Réglages"
+  },
+  "currentSpeed": {
+    "message": "Vitesse actuelle"
+  },
+  "slowDownAria": {
+    "message": "Ralentir"
+  },
+  "speedUpAria": {
+    "message": "Accélérer"
+  },
+  "resetBtn": {
+    "message": "Réinitialiser (1.0x)"
+  },
+  "shortcuts": {
+    "message": "Raccourcis clavier"
+  },
+  "slowDown": {
+    "message": "Ralentir (−$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "speedUp": {
+    "message": "Accélérer (+$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetSpeed": {
+    "message": "Vitesse normale (1x)"
+  },
+  "speedUpdated": {
+    "message": "✓ Vitesse mise à jour"
+  },
+  "speedStep": {
+    "message": "Pas de vitesse"
+  },
+  "stepHint": {
+    "message": "Pas utilisé par les boutons ± et les raccourcis S / D (ex : 0.10, 0.25, 0.5)"
+  },
+  "invalidStep": {
+    "message": "Pas invalide (entre 0.01 et 4)"
+  },
+  "stepSaved": {
+    "message": "✓ Pas de vitesse enregistré"
+  },
+  "force1xTitle": {
+    "message": "Forcer 1x"
+  },
+  "force1xLabel": {
+    "message": "Forcer la vitesse à 1.0x"
+  },
+  "force1xHint": {
+    "message": "L'extension surveille la vidéo et remet la vitesse à 1.0x si elle en change (utile quand un site force sa propre vitesse, ex : 2x)"
+  },
+  "force1xOn": {
+    "message": "✓ Forcer 1x activé"
+  },
+  "force1xOff": {
+    "message": "Forcer 1x désactivé"
+  }
+}

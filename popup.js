@@ -14,6 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const clamp = s => Math.min(MAX, Math.max(MIN, s));
     const round2 = s => Math.round(s * 100) / 100;
 
+    function stepDescs() { // descriptions S/D selon le pas réglé
+        $('slowDesc').textContent = t('slowDown', step);
+        $('fastDesc').textContent = t('speedUp', step);
+    }
+    stepDescs();
+
     function render() {
         speedEl.textContent = current.toFixed(2) + 'x';
         slider.value = current;
@@ -29,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
         current = round2(clamp(s));
         render();
         browser.runtime.sendMessage({ action: 'setSpeed', speed: current });
-        flash('✓ Speed updated', 750);
+        flash(t('speedUpdated'), 750);
     }
 
     // Pas de réglage depuis le stockage (pilote les boutons ± et le slider)
@@ -38,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (s > 0 && s <= MAX) {
             step = s;
             slider.step = String(s);
+            stepDescs();
         }
     });
 

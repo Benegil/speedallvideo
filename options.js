@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
         current = round2(clamp(s));
         render();
         browser.runtime.sendMessage({ action: 'setSpeed', speed: current });
-        flash('✓ Speed updated', 750);
+        flash(t('speedUpdated'), 750);
     }
 
     // Le pas pilote les boutons ±, le slider ET les descriptions S/D.
@@ -40,12 +40,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (s > 0 && s <= MAX) {
             step = round2(s);
             slider.step = String(step);
-            $('slowDesc').textContent = `Slow down (−${step}x)`;
-            $('fastDesc').textContent = `Speed up (+${step}x)`;
+            $('slowDesc').textContent = t('slowDown', step);
+            $('fastDesc').textContent = t('speedUp', step);
         }
     }
 
     // Chargement initial depuis le stockage sync (lu par les content scripts)
+    applyStep(); // descriptions S/D traduites dès l'ouverture
     browser.storage.sync.get(['speedStep', 'forceOneX']).then(res => {
         if (res.speedStep !== undefined && res.speedStep !== '') {
             stepInput.value = res.speedStep;
@@ -70,20 +71,20 @@ document.addEventListener('DOMContentLoaded', () => {
     presets.forEach(b => b.addEventListener('click', () => setSpeed(parseFloat(b.dataset.speed))));
 
     // Pas de vitesse : commit au blur, à la validation (Enter) ou après 1 s sans frappe.
-    let t;
+    let stepTimer;
     function commitStep() {
         const v = parseFloat(stepInput.value);
         if (!(v > 0 && v <= MAX)) {
             stepInput.value = String(step); // invalide → on restaure l'ancienne valeur
-            flash('Invalid step (use 0.01 – 4)', 1200);
+            flash(t('invalidStep'), 1200);
             return;
         }
         browser.storage.sync.set({ speedStep: String(v) });
         applyStep();
-        flash('✓ Speed Step saved', 750);
+        flash(t('stepSaved'), 750);
     }
     stepInput.addEventListener('blur', commitStep);
-    stepInput.addEventListener('input', () => { clearTimeout(t); t = setTimeout(commitStep, 1000); });
+    stepInput.addEventListener('input', () => { clearTimeout(stepTimer); stepTimer = setTimeout(commitStep, 1000); });
     stepInput.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); commitStep(); }
     });
@@ -91,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Force 1x : sauvegarde dans le stockage sync (lu par les content scripts)
     forceOneX.addEventListener('change', () => {
         browser.storage.sync.set({ forceOneX: forceOneX.checked });
-        flash(forceOneX.checked ? '✓ Force 1x enabled' : 'Force 1x disabled', 750);
+        flash(t(forceOneX.checked ? 'force1xOn' : 'force1xOff'), 750);
     });
 
     // Reset : retour à l'état « rien de forcé » — vitesse 1x ET Force 1x désactivé.
