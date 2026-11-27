@@ -14,3 +14,4 @@ README.md
 CHANGELOG.md
 *.xpi
 exclude.txt
+cle*.txt
