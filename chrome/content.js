@@ -280,7 +280,7 @@ const PLAYERS = [
 // Sur les pages watch, un <video> MASQUÉ existe déjà sous la vignette. L'overlay
 // de vignette n'existe que tant que la vidéo ne joue pas : s'il est visible,
 // on considère qu'aucune vidéo n'est « en cours » (c'était LA cause du badge
-// absent au chargement chez Gilles).
+// absent au chargement).
 function cuedVisible() {
     const el = document.querySelector('.ytp-cued-thumbnail-overlay');
     return !!el && visible(el);
