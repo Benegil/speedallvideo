@@ -4,6 +4,14 @@ All notable changes to SpeedAllVideo (derived from SpeedyVideo) will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-11-27
+### Corrigé
+- Le plugin réécrivait la vitesse deux fois par seconde même quand elle était déjà bonne : l'indicateur de vitesse de certains lecteurs restait affiché en permanence. Il n'écrit plus que si la vitesse change, ou après une action de l'utilisateur.
+- Un lecteur qui pose une vitesse de 0 le temps de charger figeait la vidéo à 0x : les vitesses hors limites sont ignorées.
+
+### Modifié
+- Firefox 110 minimum déclaré dans le manifest (requêtes de conteneur CSS).
+
 ## [1.2.0] - 2026-11-27
 ### Ajouté
 - **Lecteurs en iframe** (sites de streaming, vidéos intégrées) : le script tourne dans toutes les frames.

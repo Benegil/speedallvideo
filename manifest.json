@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "SpeedAllVideo",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "default_locale": "en",
   "description": "__MSG_extDescription__",
   "icons": {
@@ -17,7 +17,8 @@
         "required": [
           "none"
         ]
-      }
+      },
+      "strict_min_version": "110.0"
     }
   },
   "background": {

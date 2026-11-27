@@ -66,6 +66,8 @@ Le lanceur (`tools/run-tests.mjs`) utilise Google Chrome ou Chromium installé (
 npm run build      # → dist/speedallvideo-<version>.xpi (sans tests, outils ni docs, cf. exclude.txt)
 ```
 
+Publication sur AMO : `npm run publish` (construit, valide avec `web-ext lint` puis envoie avec `web-ext sign`). Les clés d'API sont lues dans `~/.config/speedallvideo/amo.env`, hors du dépôt (voir `tools/publish.sh`).
+
 La fiche AMO (description longue fr/en, captures) est dans `amo/`. Pour régénérer les captures (1280×800, fr + en) : `npm run screenshots` (ffmpeg requis).
 
 ## Fichiers

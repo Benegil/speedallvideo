@@ -1,12 +1,13 @@
 {
   "name": "speedallvideo",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "SpeedAllVideo — extension Firefox (outils de développement)",
   "scripts": {
     "test": "node tools/run-tests.mjs",
     "build": "sh tools/build.sh",
-    "screenshots": "node tools/amo-screenshots.mjs"
+    "screenshots": "node tools/amo-screenshots.mjs",
+    "publish": "sh tools/publish.sh"
   },
   "devDependencies": {
     "playwright-core": "^1.66.0-alpha-2026-11-18"
