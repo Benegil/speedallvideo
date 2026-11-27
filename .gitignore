@@ -2,3 +2,5 @@
 __MACOSX
 *.log
 temp/
+node_modules/
+dist/

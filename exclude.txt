@@ -4,3 +4,13 @@ __MACOSX
 *.log
 temp/*
 amo/*
+test/*
+tools/*
+dist/*
+node_modules/*
+package.json
+package-lock.json
+README.md
+CHANGELOG.md
+*.xpi
+exclude.txt

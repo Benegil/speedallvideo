@@ -1,8 +1,33 @@
 # Changelog
-All notable changes to SpeedyVideo Extension will be documented in this file.
+All notable changes to SpeedAllVideo (derived from SpeedyVideo) will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.2.0] - 2026-11-27
+### Ajouté
+- **Lecteurs en iframe** (sites de streaming, vidéos intégrées) : le script tourne dans toutes les frames.
+- **Shadow DOM** : vidéos des lecteurs en Web Components (ex : Reddit), y compris les shadow roots fermés (Firefox).
+- **Plein écran** : badge et grand affichage rangés dans l'élément plein écran.
+- **Signal sonore** façon jeu vidéo (hauteur = vitesse) : raccourcis, boutons du popup et des options ; icône haut-parleur dans le popup ; joué d'office quand la vidéo elle-même est en plein écran.
+- **Options d'affichage** : masquer le badge permanent, masquer le grand affichage au changement.
+- **Interface multilingue** français / anglais (`_locales/`, `i18n.js`).
+- **Neutre à l'installation** : aucune vitesse imposée tant qu'aucune n'a été choisie.
+- Fiche AMO (`amo/`), script de tests automatiques (`npm test`) et de construction du paquet (`npm run build`).
+
+### Modifié
+- La vitesse déjà posée par le site au chargement (ex : YouTube à 0.25x) est conservée au lieu d'être écrasée.
+- Un retour à 1.0 écrit par le lecteur lui-même (initialisation, bande-annonce, pub) n'est plus pris pour un choix : adopté seulement après un geste de l'utilisateur (menu, touche du lecteur). Idée reprise de Video Speed Controller.
+- La vitesse tient à l'épisode suivant (`defaultPlaybackRate`).
+- Badge permanent blanc cerclé de noir : lisible sur tous les fonds.
+- Grand affichage dimensionné sur la vidéo (plus sur la fenêtre).
+
+### Corrigé
+- Vitesse du site écrasée en boucle par l'observateur du DOM ; détections en écho.
+- Badge en double (overlays orphelins quand une vidéo est retirée/remplacée).
+- Badge affiché par-dessus les en-têtes fixes/collants et hors des zones qui défilent (Civitai).
+- Badge invisible sur youtube.com (rognage erroné des vidéos en position absolue).
+- Options masquer badge/flash sans effet immédiat.
 
 ## [1.1.0] - 2024-10-27
 ### Added
