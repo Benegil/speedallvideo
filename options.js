@@ -31,6 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { status.textContent = ''; }, ms);
     }
 
+    // Raccourcis : glisser une lettre sur une autre échange les deux (keymap.js)
+    initKeyDrag(() => { if (soundFx.checked) blip(current, current); });
+
     function setSpeed(s) {
         const prev = current;
         current = round2(clamp(s));

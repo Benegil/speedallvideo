@@ -202,6 +202,9 @@
     flex-shrink: 0;
   }
   .key-desc { font-size: 14px; color: var(--text); }
+  .key[draggable] { cursor: grab; transition: transform .12s, box-shadow .12s; }
+  .key.dragging { opacity: .4; }
+  .key.over { transform: scale(1.15); box-shadow: 0 0 0 2px var(--primary); }
 </style>
 </head>
 <body>
@@ -292,23 +295,25 @@
     <div class="label" data-i18n="shortcuts">Keyboard Shortcuts</div>
     <ul class="keys">
       <li class="key-item">
-        <span class="key">S</span>
+        <span class="key" data-act="slow" draggable="true">S</span>
         <span class="key-desc" id="slowDesc">Slow down (−0.25x)</span>
       </li>
       <li class="key-item">
-        <span class="key">D</span>
+        <span class="key" data-act="fast" draggable="true">D</span>
         <span class="key-desc" id="fastDesc">Speed up (+0.25x)</span>
       </li>
       <li class="key-item">
-        <span class="key">R</span>
+        <span class="key" data-act="reset" draggable="true">R</span>
         <span class="key-desc" data-i18n="resetSpeed">Reset speed (1x)</span>
       </li>
     </ul>
+    <div class="hint" data-i18n="keysDragHint"></div>
   </div>
 </div>
 
 <script src="i18n.js"></script>
 <script src="sound.js"></script>
+<script src="keymap.js"></script>
 <script src="options.js"></script>
 </body>
 </html>
