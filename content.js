@@ -206,14 +206,22 @@ function clipRect(target) {
     const r = target.getBoundingClientRect();
     let top = Math.max(r.top, 0), left = Math.max(r.left, 0);
     let bottom = Math.min(r.bottom, innerHeight), right = Math.min(r.right, innerWidth);
+    // Règle du navigateur : un élément position:absolute échappe au rognage de
+    // ses ancêtres NON positionnés (seul son bloc conteneur et au-delà le
+    // rognent) ; position:fixed échappe à tous. Ex : YouTube met sa vidéo en
+    // absolute dans .html5-video-container (hauteur 0, overflow masqué) —
+    // l'ignorer réduisait le badge à 0 px (invisible, même en plein écran).
+    let pos = getComputedStyle(target).position;
     for (let a = up(target); a && a !== document.documentElement; a = up(a)) {
+        if (pos === 'fixed') break;
         const cs = getComputedStyle(a);
+        if (pos === 'absolute' && cs.position === 'static') continue; // pas son bloc conteneur : ne rogne pas
         if (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') {
             const ar = a.getBoundingClientRect();
             if (cs.overflowY !== 'visible') { top = Math.max(top, ar.top); bottom = Math.min(bottom, ar.bottom); }
             if (cs.overflowX !== 'visible') { left = Math.max(left, ar.left); right = Math.min(right, ar.right); }
         }
-        if (cs.position === 'fixed') break; // au-delà, les ancêtres ne rognent plus
+        pos = cs.position; // la suite de la chaîne dépend de la position de cet ancêtre
     }
     return { top, left, bottom, right };
 }
