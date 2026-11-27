@@ -3,6 +3,14 @@
 Extension Firefox : contrôle de la vitesse de lecture des vidéos sur tous les onglets, de **0.25x à 4x**.
 Dérivée de [SpeedyVideo](https://addons.mozilla.org/fr/firefox/addon/speedy-video/) (Lin Cheng, MIT), réécrite et resserrée.
 
+## Aperçu
+
+![Grand affichage de la vitesse au changement](amo/screenshots/1-video-fr.png)
+
+| Badge sur la vidéo et menu | Réglages |
+|---|---|
+| ![Badge discret et menu de réglage](amo/screenshots/2-popup-fr.png) | ![Réglages : pas, Forcer 1x, affichage, son, audio](amo/screenshots/3-options-fr.png) |
+
 ## Fonctionnalités
 
 - **Vitesse partagée** : un seul réglage pour tous les onglets ; l'icône affiche la vitesse courante (label long défilant).
