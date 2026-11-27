@@ -648,29 +648,13 @@ browser.storage.onChanged.addListener(changes => {
     }
 });
 
-/* ---------- Signal sonore (façon jeu vidéo) ----------
+/* ---------- Signal sonore (façon jeu vidéo, cf. sound.js) ----------
    Un « blip » qui GLISSE de l'ancienne vitesse vers la nouvelle : la hauteur
    suit la vitesse (1x = la 440 Hz, 2x = octave au-dessus, 0.5x = en dessous).
    Repère quand rien ne peut s'afficher (la <video> elle-même en plein écran)
    ou si l'utilisateur l'a activé. Joué seulement sur un raccourci : c'est un
    geste utilisateur (sinon l'audio est bloqué) et une seule frame le reçoit. */
-let actx = null;
-function blip(to, from) {
-    try {
-        actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-        if (actx.state === 'suspended') actx.resume();
-        const t = actx.currentTime;
-        const o = actx.createOscillator(), g = actx.createGain();
-        o.type = 'square';
-        o.frequency.setValueAtTime(440 * from, t);
-        o.frequency.exponentialRampToValueAtTime(440 * to, t + 0.09);
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.05, t + 0.01); // discret
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-        o.connect(g); g.connect(actx.destination);
-        o.start(t); o.stop(t + 0.2);
-    } catch (e) { /* pas d'audio : tant pis, silencieux */ }
-}
+// blip() : défini dans sound.js (chargé avant content.js, cf. manifest)
 const videoFullscreen = () => { const f = document.fullscreenElement; return !!f && f.tagName === 'VIDEO'; };
 
 /* ---------- Raccourcis clavier : D = accélérer, S = ralentir, R = reset 1x ----------
@@ -694,7 +678,7 @@ on(document, 'keydown', e => {
         default: return;
     }
     e.preventDefault();
-    if (soundFx || videoFullscreen()) blip(next, force1x ? 1.0 : speed);
+    if ((soundFx || videoFullscreen()) && typeof blip === 'function') blip(next, force1x ? 1.0 : speed);
     neutral = false;
     browser.runtime.sendMessage({ action: 'setSpeed', speed: next }); // le background re-diffuse à tous les onglets
     apply(next, true); // on pose la valeur MAINTENANT : sinon la boucle la verrait comme « posée par le site »

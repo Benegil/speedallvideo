@@ -31,7 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setSpeed(s) {
+        const prev = current;
         current = round2(clamp(s));
+        if (soundFx.checked && current !== prev) blip(current, prev); // case « Signal sonore »
         render();
         browser.runtime.sendMessage({ action: 'setSpeed', speed: current });
         flash(t('speedUpdated'), 750);
@@ -113,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     soundFx.addEventListener('change', () => {
         browser.storage.sync.set({ soundFx: soundFx.checked });
+        if (soundFx.checked) blip(current, current); // aperçu du son
         flash(t(soundFx.checked ? 'soundFxOn' : 'soundFxOff'), 750);
     });
 

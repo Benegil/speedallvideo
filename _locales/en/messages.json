@@ -107,5 +107,11 @@
   },
   "soundFxOff": {
     "message": "Sound cue disabled"
+  },
+  "muteAria": {
+    "message": "Mute button sounds"
+  },
+  "unmuteAria": {
+    "message": "Turn button sounds on"
   }
 }

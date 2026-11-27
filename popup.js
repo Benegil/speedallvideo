@@ -31,8 +31,27 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { status.textContent = ''; }, ms);
     }
 
+    // Son des boutons : activé par défaut, coupé via l'icône haut-parleur.
+    let sound = true;
+    const mute = $('mute');
+    function renderMute() {
+        mute.classList.toggle('off', !sound);
+        mute.setAttribute('aria-label', t(sound ? 'muteAria' : 'unmuteAria'));
+        mute.title = t(sound ? 'muteAria' : 'unmuteAria');
+    }
+    renderMute();
+    browser.storage.sync.get('popupSound').then(res => { sound = res.popupSound !== false; renderMute(); });
+    mute.addEventListener('click', () => {
+        sound = !sound;
+        browser.storage.sync.set({ popupSound: sound });
+        renderMute();
+        if (sound) blip(current, current); // confirmation : on entend le son réactivé
+    });
+
     function setSpeed(s) {
+        const prev = current;
         current = round2(clamp(s));
+        if (sound && current !== prev) blip(current, prev);
         render();
         browser.runtime.sendMessage({ action: 'setSpeed', speed: current });
         flash(t('speedUpdated'), 750);

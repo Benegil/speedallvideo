@@ -59,7 +59,19 @@
     padding: 16px 12px;
   }
 
-  .header { margin-bottom: 12px; padding: 0 2px; }
+  .header { margin-bottom: 12px; padding: 0 2px; display: flex; align-items: center; justify-content: space-between; }
+  .mute {
+    width: 28px; height: 28px; padding: 4px;
+    border: none; border-radius: 6px; background: transparent;
+    color: var(--sub); cursor: pointer; line-height: 0;
+    transition: background .15s, color .15s;
+  }
+  .mute:hover { background: var(--card); color: var(--primary); }
+  .mute svg { width: 20px; height: 20px; }
+  .mute .waves, .mute .cross { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .mute .cross { display: none; }
+  .mute.off .waves { display: none; }
+  .mute.off .cross { display: inline; }
   h1 { font-size: 17px; font-weight: 700; color: var(--primary); }
 
   .card {
@@ -176,6 +188,13 @@
 
 <div class="header">
   <h1>SpeedAllVideo</h1>
+  <button class="mute" id="mute" data-i18n-aria="muteAria">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>
+      <path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
+      <path class="cross" d="M16 9l5 6M21 9l-5 6"/>
+    </svg>
+  </button>
 </div>
 
 <!-- Carte vitesse -->
@@ -224,6 +243,7 @@
 </div>
 
 <script src="i18n.js"></script>
+<script src="sound.js"></script>
 <script src="popup.js"></script>
 </body>
 </html>
