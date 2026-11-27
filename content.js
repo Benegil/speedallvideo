@@ -7,6 +7,7 @@ let step = 0.25;      // pas de réglage (options)
 let force1x = false;  // option « Force 1x »
 let hideBadge = false;   // option : masquer le badge permanent en haut à droite
 let hideFlash = false;   // option : masquer le flash central au changement
+let soundFx = false;     // option : signal sonore au changement (raccourcis)
 let ready = false;    // stockage chargé : avant ça, on n'écrase rien (fix rechargement → 1x)
 let lastSet = 1.0;    // dernière vitesse posée par nous (anti-écho de la détection)
 let lastForced = null;// dernière vitesse du site lue pendant le forcage
@@ -591,7 +592,8 @@ browser.runtime.onMessage.addListener(msg => {
    même chargé son stockage → il renvoyait 1.0 et la vidéo (ex : à 0.25x)
    passait « tout de suite à 1x ». ready est levé ICI ; en attendant, ni la
    boucle ni l'observer n'écrasent la vitesse réelle. */
-browser.storage.sync.get(['forceOneX', 'speedStep', 'defaultSpeed', 'hideBadge', 'hideFlash']).then(res => {
+browser.storage.sync.get(['forceOneX', 'speedStep', 'defaultSpeed', 'hideBadge', 'hideFlash', 'soundFx']).then(res => {
+    soundFx = !!res.soundFx;
     force1x = !!res.forceOneX;
     hideBadge = !!res.hideBadge;
     hideFlash = !!res.hideFlash;
@@ -628,6 +630,7 @@ browser.storage.onChanged.addListener(changes => {
         const s = parseFloat(changes.speedStep.newValue);
         if (s > 0 && s <= MAX) step = s;
     }
+    if (changes.soundFx) soundFx = !!changes.soundFx.newValue;
     if (changes.hideBadge || changes.hideFlash) {
         if (changes.hideBadge) {
             hideBadge = !!changes.hideBadge.newValue;
@@ -644,6 +647,31 @@ browser.storage.onChanged.addListener(changes => {
         if (ready) apply(force1x ? 1.0 : speed);
     }
 });
+
+/* ---------- Signal sonore (façon jeu vidéo) ----------
+   Un « blip » qui GLISSE de l'ancienne vitesse vers la nouvelle : la hauteur
+   suit la vitesse (1x = la 440 Hz, 2x = octave au-dessus, 0.5x = en dessous).
+   Repère quand rien ne peut s'afficher (la <video> elle-même en plein écran)
+   ou si l'utilisateur l'a activé. Joué seulement sur un raccourci : c'est un
+   geste utilisateur (sinon l'audio est bloqué) et une seule frame le reçoit. */
+let actx = null;
+function blip(to, from) {
+    try {
+        actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+        if (actx.state === 'suspended') actx.resume();
+        const t = actx.currentTime;
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = 'square';
+        o.frequency.setValueAtTime(440 * from, t);
+        o.frequency.exponentialRampToValueAtTime(440 * to, t + 0.09);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.05, t + 0.01); // discret
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+        o.connect(g); g.connect(actx.destination);
+        o.start(t); o.stop(t + 0.2);
+    } catch (e) { /* pas d'audio : tant pis, silencieux */ }
+}
+const videoFullscreen = () => { const f = document.fullscreenElement; return !!f && f.tagName === 'VIDEO'; };
 
 /* ---------- Raccourcis clavier : D = accélérer, S = ralentir, R = reset 1x ----------
    Gérés ici (pas en « commands » globaux) pour ne pas déclencher quand on tape
@@ -666,6 +694,7 @@ on(document, 'keydown', e => {
         default: return;
     }
     e.preventDefault();
+    if (soundFx || videoFullscreen()) blip(next, force1x ? 1.0 : speed);
     neutral = false;
     browser.runtime.sendMessage({ action: 'setSpeed', speed: next }); // le background re-diffuse à tous les onglets
     apply(next, true); // on pose la valeur MAINTENANT : sinon la boucle la verrait comme « posée par le site »

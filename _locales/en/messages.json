@@ -95,5 +95,17 @@
   },
   "hideFlashOff": {
     "message": "Big display on change shown again"
+  },
+  "soundFxLabel": {
+    "message": "Sound cue on speed change"
+  },
+  "soundFxHint": {
+    "message": "A short game-like \"blip\" when you use S / D / R: higher pitch = faster. Always played when the video itself is fullscreen (nothing can be displayed over it)."
+  },
+  "soundFxOn": {
+    "message": "✓ Sound cue enabled"
+  },
+  "soundFxOff": {
+    "message": "Sound cue disabled"
   }
 }

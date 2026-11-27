@@ -95,5 +95,17 @@
   },
   "hideFlashOff": {
     "message": "Affichage grand au changement réaffiché"
+  },
+  "soundFxLabel": {
+    "message": "Signal sonore au changement de vitesse"
+  },
+  "soundFxHint": {
+    "message": "Un court « blip » façon jeu vidéo quand vous utilisez S / D / R : plus aigu = plus rapide. Toujours joué quand la vidéo elle-même est en plein écran (rien ne peut s'afficher par-dessus)."
+  },
+  "soundFxOn": {
+    "message": "✓ Signal sonore activé"
+  },
+  "soundFxOff": {
+    "message": "Signal sonore désactivé"
   }
 }
