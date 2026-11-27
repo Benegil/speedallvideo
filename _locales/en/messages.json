@@ -1,6 +1,6 @@
 {
   "extDescription": {
-    "message": "Control the playback speed of every video, in all tabs, from 0.25x to 4x"
+    "message": "Speed up or slow down any video (YouTube, Twitch, Vimeo…) from 0.25x to 4x, across all tabs. S/D/R shortcuts, Force 1x option."
   },
   "optionsTitle": {
     "message": "SpeedAllVideo — Settings"
@@ -68,5 +68,32 @@
   },
   "force1xOff": {
     "message": "Force 1x disabled"
+  },
+  "displayTitle": {
+    "message": "Display"
+  },
+  "hideBadgeLabel": {
+    "message": "Hide the permanent speed badge"
+  },
+  "hideBadgeHint": {
+    "message": "The small “Speed …” badge at the top right of the video (and player) is no longer shown"
+  },
+  "hideFlashLabel": {
+    "message": "Hide the big speed display on change"
+  },
+  "hideFlashHint": {
+    "message": "The large “Speed …” in the middle of the video no longer appears when the speed changes (buttons, S / D shortcuts)"
+  },
+  "hideBadgeOn": {
+    "message": "✓ Permanent badge hidden"
+  },
+  "hideBadgeOff": {
+    "message": "Permanent badge shown again"
+  },
+  "hideFlashOn": {
+    "message": "✓ Big display on change hidden"
+  },
+  "hideFlashOff": {
+    "message": "Big display on change shown again"
   }
 }

@@ -1,0 +1,117 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Test options d'affichage (badge / flash)</title>
+<style>body{margin:0;width:900px;background:#222;color:#eee;font-family:sans-serif}</style></head><body>
+<p>Option « badge permanent » et « affichage grand au changement » : vérification du comportement de content.js</p>
+<video id="v1" src="video.mp4" width="480" height="270" muted autoplay loop></video>
+<ol id="results"></ol>
+<script>
+/* ================= Simulation de browser.* (idem flash-test.html) ================= */
+const store = { defaultSpeed: 1.5, speedStep: '0.25', forceOneX: false };
+const bgListeners = [];
+const tabListeners = [];
+const bclamp = s => Math.min(4, Math.max(0.25, s));
+function broadcast() { tabListeners.forEach(fn => fn({ action: 'setSpeed', speed: bg.speed })); }
+const bg = {
+    speed: 1.0,
+    handle(msg, cb) {
+        if (msg.action === 'setSpeed') { this.speed = bclamp(msg.speed); store.defaultSpeed = this.speed; broadcast(); }
+        else if (msg.action === 'getCurrentSpeed') { cb && cb({ speed: this.speed }); }
+    }
+};
+const onChangedListeners = [];
+window.browser = {
+    storage: {
+        sync: {
+            get(keys) {
+                const out = {};
+                (Array.isArray(keys) ? keys : [keys]).forEach(k => { if (k in store) out[k] = store[k]; });
+                return Promise.resolve(out);
+            },
+            set(obj) {
+                const changes = {};
+                for (const k in obj) { store[k] = obj[k]; changes[k] = { newValue: obj[k] }; }
+                onChangedListeners.forEach(fn => fn(changes));
+                return Promise.resolve();
+            }
+        },
+        onChanged: { addListener(fn) { onChangedListeners.push(fn); } }
+    },
+    runtime: {
+        onMessage: { addListener(fn) { tabListeners.push(fn); } },
+        sendMessage(msg, cb) {
+            bgListeners.forEach(fn => fn(msg));
+            cb && cb({ speed: bg.speed });
+            return Promise.resolve({ speed: bg.speed });
+        }
+    },
+    tabs: { query() { return Promise.resolve([{ id: 1 }]); }, sendMessage(id, msg) { tabListeners.forEach(fn => fn(msg)); return Promise.resolve(); }, onCreated: { addListener() {} } }
+};
+bgListeners.push(msg => bg.handle(msg));
+
+document.write('<script src="../content.js"><\/script>');
+</script>
+<script>
+(async () => {
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const ol = document.getElementById('results');
+    let n = 0;
+    const add = (name, ok, d) => { const li = document.createElement('li'); li.textContent = `${++n}. ${name} — ${ok ? 'OK' : 'ÉCHEC'}${d ? ' (' + d + ')' : ''}`; ol.appendChild(li); };
+
+    const v = document.getElementById('v1');
+    await sleep(1200); // chargement du stockage par content.js
+
+    const label = () => v._savLabel;
+    const isFlash = () => label() && label().classList.contains('sav-flash');
+    const badgeVisible = () => label() && !label().classList.contains('sav-flash') &&
+        getComputedStyle(label()).visibility !== 'hidden' && v._savOverlay.style.display === 'block';
+
+    /* 1. Par défaut : badge permanent visible, aucun flash */
+    add('défaut : badge « Speed 1.5x » visible', label() && label().textContent === 'Speed 1.5x' && badgeVisible(), `texte=${label() && label().textContent}, vis=${getComputedStyle(label()).visibility}`);
+
+    /* 2. D → flash, puis retour au badge */
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true, cancelable: true })); // → 1.75x
+    await sleep(150);
+    add('D : flash central affiché (1.75x)', isFlash() && label().textContent === 'Speed 1.75x', `classe=${label() && label().className}`);
+    await sleep(600); // fin du flash (500 ms)
+    add('après le flash : retour au badge permanent visible', !isFlash() && badgeVisible(), `vis=${getComputedStyle(label()).visibility}`);
+
+    /* 3. Option hideBadge = true → badge masqué, mais le flash reste actif */
+    await browser.storage.sync.set({ hideBadge: true });
+    await sleep(100);
+    add('hideBadge : badge permanent masqué', label().textContent === 'Speed 1.75x' && getComputedStyle(label()).visibility === 'hidden', `vis=${getComputedStyle(label()).visibility}`);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true, cancelable: true })); // → 2x, flash malgré hideBadge
+    await sleep(150);
+    add('hideBadge : le flash reste visible (le badge seulement est masqué)', isFlash() && getComputedStyle(label()).visibility !== 'hidden', `classe=${label() && label().className}`);
+    await sleep(600);
+    add('hideBadge : après le flash, retour au badge MASQUÉ (pas de flash orphelin)', !isFlash() && getComputedStyle(label()).visibility === 'hidden', `vis=${getComputedStyle(label()).visibility}, classe=${label() && label().className}`);
+
+    /* 4. Option hideFlash = true → plus de flash au changement */
+    await browser.storage.sync.set({ hideFlash: true });
+    await sleep(100);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true, cancelable: true })); // → 2.25x
+    await sleep(150);
+    add('hideFlash : aucun flash au changement de vitesse', !isFlash(), `classe=${label() && label().className}`);
+    add('hideFlash+hideBadge : badge toujours masqué', getComputedStyle(label()).visibility === 'hidden');
+
+    /* 5. Désactivation des deux options → tout réapparaît */
+    await browser.storage.sync.set({ hideBadge: false, hideFlash: false });
+    await sleep(100);
+    add('désactivé : badge permanent réaffiché', badgeVisible(), `vis=${getComputedStyle(label()).visibility}`);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true, cancelable: true })); // → 2.5x
+    await sleep(150);
+    add('désactivé : le flash fonctionne de nouveau', isFlash(), `classe=${label() && label().className}`);
+    await sleep(600);
+
+    /* 6. hideBadge activée PENDANT un flash en cours → retour au calme sans orphelin */
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true, cancelable: true })); // flash en cours
+    await sleep(150);
+    if (!isFlash()) add('précondition : flash en cours avant activation de hideBadge', false, `classe=${label() && label().className}`);
+    else {
+        await browser.storage.sync.set({ hideBadge: true });
+        await sleep(200);
+        add('hideBadge activée pendant un flash : retour au badge masqué', !isFlash() && getComputedStyle(label()).visibility === 'hidden', `classe=${label() && label().className}, vis=${getComputedStyle(label()).visibility}`);
+    }
+
+    const fails = [...ol.querySelectorAll('li')].filter(li => li.textContent.includes('ÉCHEC')).length;
+    add(`RÉSULTAT : ${n} checks, ${fails === 0 ? 'TOUT PASSE' : fails + ' échec(s)'}`, fails === 0);
+})();
+</script></body></html>

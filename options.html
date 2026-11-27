@@ -176,7 +176,7 @@
   .suffix { font-size: 15px; font-weight: 700; color: var(--sub); }
   .hint { margin-top: 8px; font-size: 12px; color: var(--sub); }
 
-  /* ---- Force 1x ---- */
+  /* ---- Force 1x / Affichage ---- */
   .force-row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
   .force-row input[type="checkbox"] {
     width: 20px; height: 20px;
@@ -185,6 +185,7 @@
     flex-shrink: 0;
   }
   .force-label { font-size: 15px; font-weight: 600; color: var(--text); }
+  .hint + .force-row { margin-top: 16px; } /* 2e option après le texte d'aide de la 1re */
 
   /* ---- Raccourcis clavier ---- */
   .keys { list-style: none; }
@@ -254,6 +255,21 @@
       <span class="force-label" data-i18n="force1xLabel">Force speed to 1.0x</span>
     </label>
     <div class="hint" data-i18n="force1xHint"></div>
+  </div>
+
+  <!-- Carte affichage -->
+  <div class="card">
+    <div class="label" data-i18n="displayTitle">Display</div>
+    <label class="force-row">
+      <input type="checkbox" id="hideBadge">
+      <span class="force-label" data-i18n="hideBadgeLabel">Hide the permanent speed badge</span>
+    </label>
+    <div class="hint" data-i18n="hideBadgeHint"></div>
+    <label class="force-row">
+      <input type="checkbox" id="hideFlash">
+      <span class="force-label" data-i18n="hideFlashLabel">Hide the big speed display on change</span>
+    </label>
+    <div class="hint" data-i18n="hideFlashHint"></div>
   </div>
 
   <!-- Carte raccourcis -->

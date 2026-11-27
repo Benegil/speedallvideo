@@ -1,6 +1,6 @@
 {
   "extDescription": {
-    "message": "Règle la vitesse de toutes les vidéos, dans tous les onglets, de 0,25x à 4x"
+    "message": "Accélérez ou ralentissez toutes les vidéos (YouTube, Twitch, Vimeo…) de 0.25x à 4x, dans tous les onglets. Raccourcis S/D/R."
   },
   "optionsTitle": {
     "message": "SpeedAllVideo — Réglages"
@@ -68,5 +68,32 @@
   },
   "force1xOff": {
     "message": "Forcer 1x désactivé"
+  },
+  "displayTitle": {
+    "message": "Affichage"
+  },
+  "hideBadgeLabel": {
+    "message": "Masquer le badge de vitesse permanent"
+  },
+  "hideBadgeHint": {
+    "message": "Le petit badge « Speed … » en haut à droite de la vidéo (et du lecteur) ne s'affiche plus"
+  },
+  "hideFlashLabel": {
+    "message": "Masquer l'affichage grand au changement de vitesse"
+  },
+  "hideFlashHint": {
+    "message": "Le « Speed … » en gros au centre de la vidéo n'apparaît plus quand on change la vitesse (boutons, raccourcis S / D)"
+  },
+  "hideBadgeOn": {
+    "message": "✓ Badge permanent masqué"
+  },
+  "hideBadgeOff": {
+    "message": "Badge permanent réaffiché"
+  },
+  "hideFlashOn": {
+    "message": "✓ Affichage grand au changement masqué"
+  },
+  "hideFlashOff": {
+    "message": "Affichage grand au changement réaffiché"
   }
 }

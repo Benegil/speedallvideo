@@ -1,10 +1,12 @@
-/* SpeedAllVideo — options : vitesse, pas de réglage (Speed Step), Force 1x */
+/* SpeedAllVideo — options : vitesse, pas de réglage (Speed Step), Force 1x, affichage */
 document.addEventListener('DOMContentLoaded', () => {
     const $ = id => document.getElementById(id);
     const speedEl = $('speed');
     const slider = $('slider');
     const stepInput = $('stepInput');
     const forceOneX = $('forceOneX');
+    const hideBadge = $('hideBadge');
+    const hideFlash = $('hideFlash');
     const status = $('status');
     const presets = [...document.querySelectorAll('.preset')];
 
@@ -47,12 +49,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Chargement initial depuis le stockage sync (lu par les content scripts)
     applyStep(); // descriptions S/D traduites dès l'ouverture
-    browser.storage.sync.get(['speedStep', 'forceOneX']).then(res => {
+    browser.storage.sync.get(['speedStep', 'forceOneX', 'hideBadge', 'hideFlash']).then(res => {
         if (res.speedStep !== undefined && res.speedStep !== '') {
             stepInput.value = res.speedStep;
             applyStep();
         }
         forceOneX.checked = !!res.forceOneX;
+        hideBadge.checked = !!res.hideBadge;
+        hideFlash.checked = !!res.hideFlash;
     });
 
     // Vitesse actuelle depuis le background
@@ -93,6 +97,16 @@ document.addEventListener('DOMContentLoaded', () => {
     forceOneX.addEventListener('change', () => {
         browser.storage.sync.set({ forceOneX: forceOneX.checked });
         flash(t(forceOneX.checked ? 'force1xOn' : 'force1xOff'), 750);
+    });
+
+    // Affichage : badge permanent / flash central — stockés sync, lus en live par content.js
+    hideBadge.addEventListener('change', () => {
+        browser.storage.sync.set({ hideBadge: hideBadge.checked });
+        flash(t(hideBadge.checked ? 'hideBadgeOn' : 'hideBadgeOff'), 750);
+    });
+    hideFlash.addEventListener('change', () => {
+        browser.storage.sync.set({ hideFlash: hideFlash.checked });
+        flash(t(hideFlash.checked ? 'hideFlashOn' : 'hideFlashOff'), 750);
     });
 
     // Reset : retour à l'état « rien de forcé » — vitesse 1x ET Force 1x désactivé.

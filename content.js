@@ -5,6 +5,8 @@ const MAX = 4;
 let speed = 1.0;      // vitesse courante (venue du stockage / des messages)
 let step = 0.25;      // pas de réglage (options)
 let force1x = false;  // option « Force 1x »
+let hideBadge = false;   // option : masquer le badge permanent en haut à droite
+let hideFlash = false;   // option : masquer le flash central au changement
 let ready = false;    // stockage chargé : avant ça, on n'écrase rien (fix rechargement → 1x)
 let lastSet = 1.0;    // dernière vitesse posée par nous (anti-écho de la détection)
 let lastForced = null;// dernière vitesse du site lue pendant le forcage
@@ -86,6 +88,7 @@ if (!document.getElementById('sav-style')) {
            Blanc cerclé de noir (contour 1px + halo) : lisible sur blanc, gris,
            noir. mix-blend-mode: difference rendait le texte invisible sur les
            gris moyens (128 − 128 ≈ 0). */
+        .sav-label.sav-hidden { visibility: hidden; transition: none; }
         .sav-label.sav-persistent {
             font-size: 10px;
             font-weight: 600;
@@ -238,6 +241,11 @@ function globalBadge(spd) {
     const box = hasVideo ? null : findPlayer();
     let b = document.getElementById('sav-global');
 
+    // Option « badge permanent » désactivée : même le badge du lecteur se masque.
+    if (hideBadge) {
+        if (b && b.style.display !== 'none') b.style.display = 'none';
+        return;
+    }
     if (!box) {
         if (b && b.style.display !== 'none') b.style.display = 'none';
         return;
@@ -296,26 +304,41 @@ function setRate(v, s) {
     return false;
 }
 
-function show(v, s, flash) { // badge d'une vidéo : TOUJOURS visible (même à 1x)
+// Badge permanent masqué (option hideBadge) — jamais pendant un flash.
+// Classe sans transition : la transition « all » du label retardait de 0,35 s
+// le passage à visibility:hidden (le badge restait visible).
+function badgeState(v) {
+    const l = v._savLabel;
+    if (l) l.classList.toggle('sav-hidden', hideBadge && !l.classList.contains('sav-flash'));
+}
+
+function endFlash(v) { // flash → badge permanent
+    const l = v._savLabel;
+    clearTimeout(v._savFlashTimer);
+    if (!l) return;
+    l.classList.remove('sav-flash');
+    l.classList.add('sav-persistent');
+    badgeState(v);
+    fit(v);
+}
+
+function show(v, s, flash) { // badge d'une vidéo : visible selon l'option hideBadge
     const o = overlayOf(v);
     const l = v._savLabel;
     const text = `Speed ${s}x`;
     if (o.style.display !== 'block') o.style.display = 'block';
     if (l.textContent !== text) l.textContent = text; // pas de re-mutation inutile
 
-    if (flash) {
+    if (flash && !hideFlash) {
         l.classList.remove('sav-persistent');
         l.classList.add('sav-flash');
         fit(v); // recentre immédiatement
         clearTimeout(v._savFlashTimer);
-        v._savFlashTimer = setTimeout(() => {
-            l.classList.remove('sav-flash');
-            l.classList.add('sav-persistent');
-            fit(v);
-        }, 500);
+        v._savFlashTimer = setTimeout(() => endFlash(v), 500);
     } else if (!l.classList.contains('sav-flash')) {
         l.classList.add('sav-persistent');
     }
+    badgeState(v);
 }
 
 function apply(spd, flash = false) {
@@ -460,8 +483,10 @@ browser.runtime.onMessage.addListener(msg => {
    même chargé son stockage → il renvoyait 1.0 et la vidéo (ex : à 0.25x)
    passait « tout de suite à 1x ». ready est levé ICI ; en attendant, ni la
    boucle ni l'observer n'écrasent la vitesse réelle. */
-browser.storage.sync.get(['forceOneX', 'speedStep', 'defaultSpeed']).then(res => {
+browser.storage.sync.get(['forceOneX', 'speedStep', 'defaultSpeed', 'hideBadge', 'hideFlash']).then(res => {
     force1x = !!res.forceOneX;
+    hideBadge = !!res.hideBadge;
+    hideFlash = !!res.hideFlash;
     const s = parseFloat(res.speedStep);
     if (s > 0 && s <= MAX) step = s;
     if (res.defaultSpeed) speed = clamp(res.defaultSpeed);
@@ -494,6 +519,21 @@ browser.storage.onChanged.addListener(changes => {
     if (changes.speedStep) {
         const s = parseFloat(changes.speedStep.newValue);
         if (s > 0 && s <= MAX) step = s;
+    }
+    if (changes.hideBadge || changes.hideFlash) {
+        if (changes.hideBadge) {
+            hideBadge = !!changes.hideBadge.newValue;
+            // Activée pendant un flash : on l'arrête tout de suite (sinon il
+            // laissait place au badge qu'on vient justement de masquer).
+            if (hideBadge) Array.from(document.getElementsByTagName('video')).forEach(v => {
+                if (v._savLabel && v._savLabel.classList.contains('sav-flash')) endFlash(v);
+            });
+        }
+        if (changes.hideFlash) hideFlash = !!changes.hideFlash.newValue;
+        // Ré-applique immédiatement : met à jour les labels, et si le badge
+        // réapparaît pendant un flash en cours, celui-ci reste (le timer le
+        // remettra en badge permanent).
+        if (ready) apply(force1x ? 1.0 : speed);
     }
 });
 
