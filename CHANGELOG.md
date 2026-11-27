@@ -4,6 +4,12 @@ All notable changes to SpeedAllVideo (derived from SpeedyVideo) will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-11-27
+### Ajouté
+- **Engrenage** dans le popup, avant le haut-parleur : ouvre les paramètres de l'extension.
+- **Raccourcis échangeables** : dans le popup, glisser une lettre (S, D, R) sur une autre échange les deux raccourcis (ex : `S` pour « speed » = accélérer). Réglage `keyMap`, appliqué tout de suite à tous les onglets.
+- **10 langues de plus** : espagnol, allemand, italien, portugais (Brésil), néerlandais, polonais, russe, japonais, chinois simplifié, coréen.
+
 ## [1.2.1] - 2026-11-27
 ### Corrigé
 - Le plugin réécrivait la vitesse deux fois par seconde même quand elle était déjà bonne : l'indicateur de vitesse de certains lecteurs restait affiché en permanence. Il n'écrit plus que si la vitesse change, ou après une action de l'utilisateur.
