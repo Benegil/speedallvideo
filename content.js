@@ -68,9 +68,14 @@ if (!document.getElementById('sav-style')) {
             pointer-events: none;
             transition: all 0.35s ease;
         }
-        /* Flash central au changement de vitesse */
+        /* L'overlay est un conteneur CSS : les tailles en cqw/cqh se
+           rapportent à LA VIDÉO, pas à la fenêtre (vw débordait des petites
+           vidéos, ex : fil d'actualité). */
+        .sav-overlay { container-type: size; }
+        /* Flash central au changement de vitesse : « Speed 1.75x » (11 car.)
+           tient dans ~90 % de la largeur à 13cqw, et dans la hauteur à 40cqh. */
         .sav-label.sav-flash {
-            font-size: clamp(28px, 7vw, 72px);
+            font-size: clamp(12px, min(13cqw, 40cqh), 72px);
             font-weight: 800;
             letter-spacing: 1px;
             text-shadow: 0 2px 14px rgba(0,0,0,.9), 0 0 4px rgba(0,0,0,.6);

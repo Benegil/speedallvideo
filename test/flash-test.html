@@ -1,0 +1,106 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Test taille du flash</title>
+<style>body{margin:0;width:1400px;background:#222;color:#eee;font-family:sans-serif}</style></head><body>
+<p>Fenêtre large, petite vidéo : le flash « Speed … » doit tenir dans la vidéo</p>
+<video id="v1" src="video.mp4" width="260" height="146" muted autoplay loop></video>
+<video id="v2" src="video.mp4" width="900" height="506" muted autoplay loop></video>
+<ol id="results"></ol>
+<script>
+/* ================= Simulation de browser.* =================
+   Fidèle au comportement réel testé :
+   - le background est « froid » au démarrage (speed=1.0) et ne charge son
+     stockage qu'asynchronement, puis re-diffuse à tous les onglets ;
+   - storage.sync.set notifie onChanged (comme Firefox) ;
+   - runtime.sendMessage(msg, cb) répond via callback ET renvoie une Promise. */
+const store = { defaultSpeed: 1.0, speedStep: '0.25', forceOneX: false };
+const bgListeners = [];   // listeners du background SIMULÉ (ci-dessous)
+const tabListeners = [];  // listeners des « onglets » : content.js s'y enregistre
+let detMsgs = 0;          // messages setSpeed reçus avec fromDetection
+
+const bclamp = s => Math.min(4, Math.max(0.25, s));
+function broadcast() {
+    tabListeners.forEach(fn => fn({ action: 'setSpeed', speed: bg.speed }));
+}
+const bg = {
+    speed: 1.0, // froid : pas encore chargé le stockage (comme au rechargement d'extension)
+    handle(msg, cb) {
+        if (msg.action === 'setSpeed') {
+            this.speed = bclamp(msg.speed);
+            store.defaultSpeed = this.speed;
+            broadcast();
+        } else if (msg.action === 'getCurrentSpeed') {
+            cb && cb({ speed: this.speed });
+        }
+    },
+    /* Rechargement simulé : le background repart à 1.0 puis recharge son stockage. */
+    reload() {
+        this.speed = 1.0;
+        setTimeout(() => {
+            if (store.defaultSpeed) {
+                this.speed = bclamp(store.defaultSpeed);
+                broadcast();
+            }
+        }, 50);
+    }
+};
+
+const onChangedListeners = [];
+window.browser = {
+    storage: {
+        sync: {
+            get(keys) {
+                const out = {};
+                (Array.isArray(keys) ? keys : [keys]).forEach(k => { if (k in store) out[k] = store[k]; });
+                return Promise.resolve(out);
+            },
+            set(obj) {
+                const changes = {};
+                for (const k in obj) { store[k] = obj[k]; changes[k] = { newValue: obj[k] }; }
+                onChangedListeners.forEach(fn => fn(changes));
+                return Promise.resolve();
+            }
+        },
+        onChanged: { addListener(fn) { onChangedListeners.push(fn); } }
+    },
+    runtime: {
+        onMessage: { addListener(fn) { tabListeners.push(fn); } }, // content.js tourne dans un « onglet »
+        sendMessage(msg, cb) {
+            // Onglet → background : seuls les listeners du background sont appelés.
+            bgListeners.forEach(fn => fn(msg));
+            if (msg.action === 'setSpeed' && msg.fromDetection) detMsgs++;
+            cb && cb({ speed: bg.speed });
+            return Promise.resolve({ speed: bg.speed });
+        }
+    },
+    tabs: {
+        query() { return Promise.resolve([{ id: 1 }]); },
+        sendMessage(id, msg) { tabListeners.forEach(fn => fn(msg)); return Promise.resolve(); },
+        onCreated: { addListener() {} }
+    }
+};
+
+/* Le background « réel » est simulé par la même logique que background.js :
+   il écoute les messages, met à jour vitesse + stockage et re-diffuse. */
+bgListeners.push(msg => bg.handle(msg));
+
+
+store.defaultSpeed = 1.5;
+document.write('<script src="../content.js"><\/script>');
+</script>
+<script>
+(async () => {
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const ol = document.getElementById('results');
+    const add = (name, ok, d) => { const li = document.createElement('li'); li.textContent = `${name} — ${ok ? 'OK' : 'ÉCHEC'} (${d})`; ol.appendChild(li); };
+    await sleep(1200);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true, cancelable: true })); // → 1.75x, flash
+    await sleep(400); // fin de la transition (0.35 s), avant le retour en badge (0.5 s)
+    for (const [id, name] of [['v1', 'O1 — petite vidéo (260 px)'], ['v2', 'O2 — grande vidéo (900 px)']]) {
+        const v = document.getElementById(id);
+        const l = v._savLabel, o = v._savOverlay;
+        const lr = l.getBoundingClientRect(), or = o.getBoundingClientRect();
+        const inside = l.classList.contains('sav-flash') && lr.left >= or.left - 1 && lr.right <= or.right + 1 && lr.top >= or.top - 1 && lr.bottom <= or.bottom + 1;
+        add(name + ' : flash dans la vidéo', inside, `texte=${l.textContent}, largeur=${Math.round(lr.width)}/${Math.round(or.width)}, hauteur=${Math.round(lr.height)}/${Math.round(or.height)}, police=${getComputedStyle(l).fontSize}`);
+    }
+    for (let i = 0; i < 8; i++) ol.appendChild(document.createElement('li'));
+})();
+</script></body></html>
