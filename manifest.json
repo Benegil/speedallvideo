@@ -28,7 +28,9 @@
       ],
       "js": [
         "content.js"
-      ]
+      ],
+      "all_frames": true,
+      "match_about_blank": true
     }
   ],
   "browser_action": {
