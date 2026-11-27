@@ -396,6 +396,7 @@ function apply(spd, flash = false) {
     let changed = 0;
     const passive = neutral && !force1x; // neutre : on affiche sans écrire
     Array.from(videos).forEach(v => {
+        if (ignored(v)) return;
         if (passive) { hookRate(v); show(v, round2(v.playbackRate), flash); return; }
         if (setRate(v, spd)) changed++;
         hookRate(v); // réaction immédiate si le site change la vitesse pendant un forcage
@@ -429,7 +430,15 @@ function hookRate(v) {
     if (v._savRC === ME) return;
     if (v._savRCFn) v.removeEventListener('ratechange', v._savRCFn);
     v._savRCFn = () => {
-        if (dead || !force1x || v._savHold) return;
+        if (dead || v._savHold) return;
+        if (!force1x) { // 1.0 autonome du lecteur : rétabli tout de suite (sinon jusqu'à 1 s à 1x)
+            const r = round2(v.playbackRate);
+            if (!neutral && ready && Math.abs(r - lastSet) >= 0.001 && !siteMayAdopt(v, r)) {
+                const t = setTimeout(() => { if (!dead && !force1x) apply(lastSet); }, 0);
+                timers.push(t);
+            }
+            return;
+        }
         if (Math.abs(v.playbackRate - 1) < 0.001) return; // notre propre écriture 1.0 → pas de boucle
         let rate = v.playbackRate;
         try { rate = v.getPlaybackRate ? v.getPlaybackRate() : rate; } catch (e) {}
@@ -444,6 +453,38 @@ function hookRate(v) {
     on(v, 'ratechange', v._savRCFn);
 }
 
+/* ---------- Intention de l'utilisateur (idée reprise de Video Speed Controller) ----------
+   Les lecteurs ÉCRIVENT 1.0 d'eux-mêmes en s'initialisant (bande-annonce
+   Netflix au survol, nouvelle vidéo YouTube, pub…) : adopter ce 1.0 faisait
+   passer TOUT le plugin à 1x. Règles :
+   - vitesse ≠ 1.0 posée par le site → adoptée (aucun site ne passe seul à
+     1.7x ; c'est aussi YouTube qui restaure la vitesse de l'utilisateur) ;
+   - retour à exactement 1.0 → adopté seulement avec une preuve d'intention :
+     touche du lecteur (ex : YouTube Maj+<) juste avant, ou DEUX clics
+     rapprochés (menu de vitesse → « Normal ») hors réinitialisation du média ;
+   - sinon : bruit d'initialisation → on rétablit notre vitesse. */
+const INIT_GRACE_MS = 2000;   // après loadstart/loadedmetadata : 1.0 = bruit d'init
+const GESTURE_MS = 1000;      // le changement doit suivre de près le geste
+const CLICK_SEQ_MS = 5000;    // deux clics de menu en moins de 5 s
+let lastClickAt = 0, prevClickAt = 0, lastKeyAt = 0;
+on(document, 'pointerdown', () => { prevClickAt = lastClickAt; lastClickAt = performance.now(); }, true);
+on(document, 'keydown', e => { if (!/^[sdr]$/i.test(e.key)) lastKeyAt = performance.now(); }, true); // pas nos raccourcis
+const markInit = e => { if (e.target && e.target.tagName === 'VIDEO') e.target._savInitAt = performance.now(); };
+['loadstart', 'loadedmetadata'].forEach(t => on(document, t, markInit, true));
+
+function siteMayAdopt(v, r) {
+    if (Math.abs(r - 1) >= 0.005) return true;
+    const now = performance.now();
+    if (now - lastKeyAt < GESTURE_MS) return true;
+    const seq = now - lastClickAt < GESTURE_MS && lastClickAt - prevClickAt < CLICK_SEQ_MS && prevClickAt > 0;
+    const init = now - (v._savInitAt || 0) < INIT_GRACE_MS;
+    return seq && !init;
+}
+
+// Netflix : aperçus / bandes-annonces de la page d'accueil (comme VSC)
+const ignored = v => location.hostname === 'www.netflix.com' &&
+    (v.classList.contains('preview-video') || !!(v.parentElement && v.parentElement.classList.contains('billboard-row')));
+
 /* ---------- Détection de la vitesse choisie dans le lecteur du site ----------
    L'utilisateur change la vitesse depuis le menu du site (YouTube…) : on suit
    cette valeur, c'est elle qui sera restaurée à la désactivation de Force 1x.
@@ -453,7 +494,7 @@ function hookRate(v) {
    écraserait un changement clavier encore frais. */
 function detect() {
     for (const v of allVideos()) {
-        if (!visible(v)) continue;
+        if (!visible(v) || ignored(v)) continue;
         let rate = v.playbackRate;
         try { rate = v.getPlaybackRate ? v.getPlaybackRate() : rate; } catch (e) {}
         if (v.seeking) continue; // YouTube force 1x pendant un seek : état instable
@@ -461,6 +502,7 @@ function detect() {
         // Notre propre valeur posée récemment → pas de re-détection. Au-delà
         // de la fenêtre, une même valeur lue est considérée comme venue du site.
         if (Math.abs(r - lastSet) < 0.001) return lastSet; // notre propre valeur : rien à détecter
+        if (!siteMayAdopt(v, r)) return lastSet; // 1.0 de (ré)initialisation : on rétablit
         if (r >= MIN && r <= MAX) {
             speed = r;
             neutral = false; // le site a choisi : on suit désormais
