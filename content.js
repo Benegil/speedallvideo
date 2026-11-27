@@ -114,14 +114,45 @@ function overlayOf(v) {
     return o;
 }
 
+/* Haut VISIBLE de la cible : un en-tête fixe/collant du site (barre de
+   navigation…) peut recouvrir le haut de la vidéo quand on défile. Notre
+   overlay est au-dessus de tout (z-index max) → le badge s'affichait PAR-
+   DESSUS cet en-tête. On sonde le point où se trouve le badge (coin haut-
+   droit) : tant qu'un élément fixed/sticky étranger à la vidéo le couvre, on
+   descend sous lui. Nos overlays ont pointer-events:none → ignorés par la sonde. */
+function visibleTop(target, r) {
+    const x = Math.min(r.right, innerWidth) - 24;
+    let y = Math.max(r.top, 0) + 4;
+    for (let i = 0; i < 4 && y < r.bottom; i++) {
+        const el = document.elementFromPoint(x, y);
+        if (!el || el === target || target.contains(el)) break;
+        let cover = null;
+        for (let a = el; a && a !== document.body; a = a.parentElement) {
+            if (a.contains(target)) break; // conteneur de la vidéo (lecteur…) : pas un masque
+            const p = getComputedStyle(a).position;
+            if (p === 'fixed' || p === 'sticky') { cover = a; break; }
+        }
+        if (!cover) break;
+        y = cover.getBoundingClientRect().bottom + 1;
+    }
+    return Math.max(r.top, y - 4);
+}
+
+function place(o, target) { // cale l'overlay sur la partie visible de la cible
+    const r = target.getBoundingClientRect();
+    const top = visibleTop(target, r);
+    const h = r.bottom - top;
+    o.style.visibility = h < 20 ? 'hidden' : ''; // cible entièrement masquée : pas de badge
+    o.style.width = r.width + 'px';
+    o.style.height = Math.max(0, h) + 'px';
+    o.style.top = top + 'px';
+    o.style.left = r.left + 'px';
+}
+
 function fit(v) { // recadre l'overlay sur sa vidéo
     const o = v._savOverlay;
     if (!o || o.style.display === 'none') return;
-    const r = v.getBoundingClientRect();
-    o.style.width = r.width + 'px';
-    o.style.height = r.height + 'px';
-    o.style.top = r.top + 'px';
-    o.style.left = r.left + 'px';
+    place(o, v);
 }
 
 function fitAll() {
@@ -192,11 +223,7 @@ function globalBadge(spd) {
         b.appendChild(l);
         (document.body || document.documentElement).appendChild(b);
     }
-    const r = box.getBoundingClientRect();
-    b.style.width = r.width + 'px';
-    b.style.height = r.height + 'px';
-    b.style.top = r.top + 'px';
-    b.style.left = r.left + 'px';
+    place(b, box);
     const l = b.querySelector('.sav-label');
     const text = `Speed ${spd}x`;
     if (l.textContent !== text) l.textContent = text;
