@@ -342,19 +342,21 @@ on(document, 'scroll', refit, { passive: true, capture: true });
 on(window, 'resize', refit);
 
 /* ---------- Application de la vitesse ---------- */
-function setRate(v, s) {
+function setRate(v, s, reaffirm = false) {
     // Épisode suivant / nouvelle source : load() remet playbackRate à
     // defaultPlaybackRate (1 par défaut) → la détection prenait ce 1x pour un
     // choix du site. Avec defaultPlaybackRate = notre vitesse, elle survit.
     if (v.defaultPlaybackRate !== s) { try { v.defaultPlaybackRate = s; } catch (e) {} }
-    // On écrit TOUJOURS (même si déjà à cette valeur) : sinon l'événement
-    // ratechange ne se déclenche pas et le lecteur du site ne met pas à jour
-    // son état interne — ex : YouTube affichait alors dans son menu de vitesse
-    // sa dernière valeur (0.55) au lieu de la nôtre (1x).
+    // Valeur déjà bonne : on n'écrit RIEN — chaque écriture émet un
+    // ratechange, et des lecteurs affichent leur propre indicateur de vitesse
+    // à chaque fois (il restait affiché en permanence avec une écriture par
+    // tour de boucle). Seule exception : reaffirm, après une ACTION de
+    // l'utilisateur, pour que le lecteur du site mette à jour son état (ex :
+    // le menu de YouTube affichait 0.55 au lieu de notre 1x).
     if (v.playbackRate !== s) {
         try { v.playbackRate = s; return true; }
         catch (e) { console.error(`SpeedAllVideo : playbackRate ${s} refusé`, e); }
-    } else {
+    } else if (reaffirm) {
         // Valeur déjà posée : on ré-affirme avec une écriture « aller-retour »
         // (le navigateur n'émet pas d'événement pour une écriture identique).
         // v._savHold : nos propres écritures instantanées ne sont pas
@@ -411,7 +413,7 @@ function apply(spd, flash = false) {
     Array.from(videos).forEach(v => {
         if (ignored(v)) return;
         if (passive) { hookRate(v); show(v, round2(v.playbackRate), flash); return; }
-        if (setRate(v, spd)) changed++;
+        if (setRate(v, spd, flash)) changed++; // flash = action de l'utilisateur
         hookRate(v); // réaction immédiate si le site change la vitesse pendant un forcage
         show(v, spd, flash);
     });
@@ -428,6 +430,7 @@ function apply(spd, flash = false) {
    ignorées pour éviter les allers-retours. */
 function noteSiteRate(r) {
     if (Math.abs(r - lastSet) < 0.001) return;
+    if (r < MIN || r > MAX) return; // 0 pendant un chargement… : pas une vitesse choisie
     if (lastForced === null || Math.abs(r - lastForced) >= 0.001) {
         speed = r;
         console.log(`SpeedAllVideo : vitesse du site suivie → ${speed}x`);
@@ -515,13 +518,15 @@ function detect() {
         // Notre propre valeur posée récemment → pas de re-détection. Au-delà
         // de la fenêtre, une même valeur lue est considérée comme venue du site.
         if (Math.abs(r - lastSet) < 0.001) return lastSet; // notre propre valeur : rien à détecter
+        // Hors limites (ex : 0, que des lecteurs posent le temps de charger) :
+        // ce n'est pas un choix de vitesse → ignoré. Le renvoyer figeait la
+        // vidéo à 0x (« Speed 0x »).
+        if (r < MIN || r > MAX) return lastSet;
         if (!siteMayAdopt(v, r)) return lastSet; // 1.0 de (ré)initialisation : on rétablit
-        if (r >= MIN && r <= MAX) {
-            speed = r;
-            neutral = false; // le site a choisi : on suit désormais
-            console.log(`SpeedAllVideo : vitesse réelle détectée ${speed}x`);
-            browser.runtime.sendMessage({ action: 'setSpeed', speed, fromDetection: true }).catch(() => {});
-        }
+        speed = r;
+        neutral = false; // le site a choisi : on suit désormais
+        console.log(`SpeedAllVideo : vitesse réelle détectée ${speed}x`);
+        browser.runtime.sendMessage({ action: 'setSpeed', speed, fromDetection: true }).catch(() => {});
         return r; // la boucle l'applique (une seule écriture par cycle)
     }
     return lastSet;
