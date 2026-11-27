@@ -102,6 +102,52 @@ if (!document.getElementById('sav-style')) {
     (document.head || document.documentElement).appendChild(st);
 }
 
+/* ---------- Toutes les vidéos, y compris dans les Shadow DOM ----------
+   Certains lecteurs (Web Components : Reddit…) cachent leur <video> dans un
+   shadow root : getElementsByTagName ne le voit pas. On mémorise les shadow
+   roots trouvés (même FERMÉS : Firefox expose openOrClosedShadowRoot aux
+   extensions) et on les observe comme le document. */
+const roots = new Set();
+function scanRoots() {
+    const visit = root => {
+        for (const el of root.querySelectorAll('*')) {
+            let sr = null;
+            try { sr = el.openOrClosedShadowRoot || el.shadowRoot; } catch (e) {}
+            if (sr && !roots.has(sr)) {
+                roots.add(sr);
+                if (typeof obs !== 'undefined') obs.observe(sr, { childList: true, subtree: true });
+                visit(sr);
+            }
+        }
+    };
+    for (const r of roots) if (!r.host.isConnected) roots.delete(r);
+    visit(document);
+    for (const r of Array.from(roots)) visit(r);
+}
+function allVideos() {
+    const out = Array.from(document.getElementsByTagName('video'));
+    for (const r of roots) if (r.host.isConnected) out.push(...r.querySelectorAll('video'));
+    return out;
+}
+// Parent « à travers » les shadow roots (parentElement s'arrête à leur bord).
+const up = a => a.parentElement || (a.getRootNode && a.getRootNode().host) || null;
+const holds = (a, t) => { for (let x = t; x; x = up(x)) if (x === a) return true; return false; };
+
+/* ---------- Plein écran ----------
+   Seul l'élément en plein écran (et son contenu) est affiché : nos overlays,
+   posés dans <body>, devenaient invisibles. On les range DANS l'élément plein
+   écran (sauf si c'est la <video> elle-même : rien ne peut s'y superposer). */
+function host() {
+    const fs = document.fullscreenElement;
+    return fs && fs.tagName !== 'VIDEO' ? fs : (document.body || document.documentElement);
+}
+function rehome() {
+    const h = host();
+    document.querySelectorAll('.sav-overlay').forEach(o => {
+        if (o.getAttribute('data-sav-owner') === String(ME) && o.parentNode !== h) h.appendChild(o);
+    });
+}
+
 /* ---------- Overlays par vidéo ---------- */
 function overlayOf(v) {
     let o = v._savOverlay;
@@ -119,7 +165,7 @@ function overlayOf(v) {
         const l = document.createElement('span');
         l.className = 'sav-label sav-persistent';
         o.appendChild(l);
-        (document.body || document.documentElement).appendChild(o);
+        host().appendChild(o);
         v._savOverlay = o;
         v._savLabel = l;
         o._savVideo = v; // lien retour : l'overlay meurt avec sa vidéo (cf. fitAll)
@@ -138,10 +184,10 @@ function visibleTop(target, r) {
     let y = Math.max(r.top, 0) + 4;
     for (let i = 0; i < 4 && y < r.bottom; i++) {
         const el = document.elementFromPoint(x, y);
-        if (!el || el === target || target.contains(el)) break;
+        if (!el || el === target || holds(el, target) && el !== document.body || holds(target, el)) break;
         let cover = null;
-        for (let a = el; a && a !== document.body; a = a.parentElement) {
-            if (a.contains(target)) break; // conteneur de la vidéo (lecteur…) : pas un masque
+        for (let a = el; a && a !== document.body; a = up(a)) {
+            if (holds(a, target)) break; // conteneur de la vidéo (lecteur…) : pas un masque
             const p = getComputedStyle(a).position;
             if (p === 'fixed' || p === 'sticky') { cover = a; break; }
         }
@@ -159,7 +205,7 @@ function clipRect(target) {
     const r = target.getBoundingClientRect();
     let top = Math.max(r.top, 0), left = Math.max(r.left, 0);
     let bottom = Math.min(r.bottom, innerHeight), right = Math.min(r.right, innerWidth);
-    for (let a = target.parentElement; a && a !== document.documentElement; a = a.parentElement) {
+    for (let a = up(target); a && a !== document.documentElement; a = up(a)) {
         const cs = getComputedStyle(a);
         if (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') {
             const ar = a.getBoundingClientRect();
@@ -200,7 +246,7 @@ function fitAll() {
         if (v && v._savOverlay === o) { v._savOverlay = null; v._savLabel = null; }
         o.remove();
     });
-    Array.from(document.getElementsByTagName('video')).forEach(v => { if (v._savOverlay) fit(v); });
+    allVideos().forEach(v => { if (v._savOverlay) fit(v); });
 }
 
 /* ---------- Badge global (aucune vidéo visible, mais un lecteur connu) ----------
@@ -237,7 +283,7 @@ function findPlayer() {
 
 function globalBadge(spd) {
     const hasVideo = !cuedVisible() &&
-        Array.from(document.getElementsByTagName('video')).some(visible);
+        allVideos().some(visible);
     const box = hasVideo ? null : findPlayer();
     let b = document.getElementById('sav-global');
 
@@ -284,6 +330,10 @@ on(window, 'resize', refit);
 
 /* ---------- Application de la vitesse ---------- */
 function setRate(v, s) {
+    // Épisode suivant / nouvelle source : load() remet playbackRate à
+    // defaultPlaybackRate (1 par défaut) → la détection prenait ce 1x pour un
+    // choix du site. Avec defaultPlaybackRate = notre vitesse, elle survit.
+    if (v.defaultPlaybackRate !== s) { try { v.defaultPlaybackRate = s; } catch (e) {} }
     // On écrit TOUJOURS (même si déjà à cette valeur) : sinon l'événement
     // ratechange ne se déclenche pas et le lecteur du site ne met pas à jour
     // son état interne — ex : YouTube affichait alors dans son menu de vitesse
@@ -342,7 +392,7 @@ function show(v, s, flash) { // badge d'une vidéo : visible selon l'option hide
 }
 
 function apply(spd, flash = false) {
-    const videos = document.getElementsByTagName('video');
+    const videos = allVideos();
     let changed = 0;
     const passive = neutral && !force1x; // neutre : on affiche sans écrire
     Array.from(videos).forEach(v => {
@@ -402,7 +452,7 @@ function hookRate(v) {
    en a posé une, sinon lastSet — jamais l'ancienne valeur mémoire qui
    écraserait un changement clavier encore frais. */
 function detect() {
-    for (const v of Array.from(document.getElementsByTagName('video'))) {
+    for (const v of allVideos()) {
         if (!visible(v)) continue;
         let rate = v.playbackRate;
         try { rate = v.getPlaybackRate ? v.getPlaybackRate() : rate; } catch (e) {}
@@ -425,7 +475,7 @@ function detect() {
 // Filet de la boucle : le hook ratechange gère déjà l'instantané ; ici on
 // capture seulement ce que le site aurait posé sans événement (rare).
 function trackForced() {
-    for (const v of Array.from(document.getElementsByTagName('video'))) {
+    for (const v of allVideos()) {
         if (!visible(v)) continue;
         let rate = v.playbackRate;
         try { rate = v.getPlaybackRate ? v.getPlaybackRate() : rate; } catch (e) {}
@@ -439,6 +489,7 @@ function trackForced() {
 // écraserait la vitesse que le site vient de poser avant qu'on ne la lise.
 iv(() => {
     if (!ready) return;
+    scanRoots(); // nouveaux lecteurs en Shadow DOM
     if (force1x) { trackForced(); apply(1.0); }
     else apply(detect()); // détection + application : une seule écriture par cycle
 }, 1000);
@@ -452,17 +503,32 @@ const obs = new MutationObserver(ms => {
     // compteurs…) ré-appliquerait sinon `speed` en boucle et écraserait la
     // vitesse que le site vient de poser avant que detect() ne la lise.
     const hasVideo = n => n.nodeType === 1 && !(n.classList && n.classList.contains('sav-overlay')) &&
-        (n.tagName === 'VIDEO' || n.getElementsByTagName('video').length);
+        (n.tagName === 'VIDEO' || n.getElementsByTagName('video').length || n.shadowRoot);
     if (ms.some(m => Array.from(m.removedNodes).some(hasVideo))) fitAll(); // vidéo retirée → overlay orphelin nettoyé
     const relevant = ms.some(m => Array.from(m.addedNodes).some(n => hasVideo(n) && !n.closest('.sav-overlay')));
     if (!relevant || pending) return;
     pending = true;
     requestAnimationFrame(() => {
         pending = false;
+        scanRoots(); // un lecteur Web Component a pu apparaître
         if (ready) apply(force1x ? 1.0 : speed); // pas avant le chargement du stockage
     });
 });
 obs.observe(document.body, { childList: true, subtree: true });
+scanRoots();
+
+/* Vidéo créée ou chargée par JS sans passer par une mutation visible
+   (lecteur recyclé, élément inséré puis rempli…) : ses événements de média
+   arrivent en capture sur document → prise en charge immédiate, sans
+   attendre le tour de boucle. Uniquement les vidéos pas encore vues : une
+   reprise de lecture ne doit pas écraser une vitesse choisie par le site. */
+const kick = e => {
+    const v = e.target;
+    if (dead || !ready || !v || v.tagName !== 'VIDEO' || v._savOverlay) return;
+    apply(force1x ? 1.0 : speed);
+};
+['loadedmetadata', 'play', 'playing'].forEach(t => on(document, t, kick, true));
+on(document, 'fullscreenchange', () => { rehome(); fitAll(); });
 
 /* ---------- Messages du background ---------- */
 browser.runtime.onMessage.addListener(msg => {
@@ -495,7 +561,7 @@ browser.storage.sync.get(['forceOneX', 'speedStep', 'defaultSpeed', 'hideBadge',
     // Chargement de page : si le site a DÉJÀ posé sa vitesse (YouTube restaure
     // la sienne, ex : 0.25x), on l'adopte au lieu de l'écraser avec la mémoire.
     if (!REINJ && !force1x) {
-        const v = Array.from(document.getElementsByTagName('video'))
+        const v = allVideos()
             .find(v => Math.abs(v.playbackRate - 1) >= 0.001 && v.playbackRate >= MIN && v.playbackRate <= MAX);
         if (v && Math.abs(round2(v.playbackRate) - speed) >= 0.001) {
             speed = round2(v.playbackRate);
@@ -525,7 +591,7 @@ browser.storage.onChanged.addListener(changes => {
             hideBadge = !!changes.hideBadge.newValue;
             // Activée pendant un flash : on l'arrête tout de suite (sinon il
             // laissait place au badge qu'on vient justement de masquer).
-            if (hideBadge) Array.from(document.getElementsByTagName('video')).forEach(v => {
+            if (hideBadge) allVideos().forEach(v => {
                 if (v._savLabel && v._savLabel.classList.contains('sav-flash')) endFlash(v);
             });
         }
