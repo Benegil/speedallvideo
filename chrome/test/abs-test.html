@@ -1,0 +1,114 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Test vidéo absolute (structure YouTube)</title>
+<style>body{margin:0;background:#222;color:#eee;font-family:sans-serif}
+#player{position:relative;width:480px;height:270px;margin:20px}
+.html5-video-container{overflow:hidden} /* hauteur 0, comme chez YouTube */
+video{position:absolute;top:0;left:0;width:480px;height:270px}</style></head><body>
+<div id="player"><div class="html5-video-container"><video id="v1" src="video.mp4" muted autoplay loop></video></div></div>
+<ol id="results"></ol>
+<script>
+/* ================= Simulation de browser.* =================
+   Fidèle au comportement réel testé :
+   - le background est « froid » au démarrage (speed=1.0) et ne charge son
+     stockage qu'asynchronement, puis re-diffuse à tous les onglets ;
+   - storage.sync.set notifie onChanged (comme Firefox) ;
+   - runtime.sendMessage(msg, cb) répond via callback ET renvoie une Promise. */
+const store = { defaultSpeed: 1.0, speedStep: '0.25', forceOneX: false };
+const bgListeners = [];   // listeners du background SIMULÉ (ci-dessous)
+const tabListeners = [];  // listeners des « onglets » : content.js s'y enregistre
+let detMsgs = 0;          // messages setSpeed reçus avec fromDetection
+
+const bclamp = s => Math.min(4, Math.max(0.25, s));
+function broadcast() {
+    tabListeners.forEach(fn => fn({ action: 'setSpeed', speed: bg.speed }));
+}
+const bg = {
+    speed: 1.0, // froid : pas encore chargé le stockage (comme au rechargement d'extension)
+    handle(msg, cb) {
+        if (msg.action === 'setSpeed') {
+            this.speed = bclamp(msg.speed);
+            store.defaultSpeed = this.speed;
+            broadcast();
+        } else if (msg.action === 'getCurrentSpeed') {
+            cb && cb({ speed: this.speed });
+        }
+    },
+    /* Rechargement simulé : le background repart à 1.0 puis recharge son stockage. */
+    reload() {
+        this.speed = 1.0;
+        setTimeout(() => {
+            if (store.defaultSpeed) {
+                this.speed = bclamp(store.defaultSpeed);
+                broadcast();
+            }
+        }, 50);
+    }
+};
+
+const onChangedListeners = [];
+window.browser = {
+    storage: {
+        sync: {
+            get(keys) {
+                const out = {};
+                (Array.isArray(keys) ? keys : [keys]).forEach(k => { if (k in store) out[k] = store[k]; });
+                return Promise.resolve(out);
+            },
+            set(obj) {
+                const changes = {};
+                for (const k in obj) { store[k] = obj[k]; changes[k] = { newValue: obj[k] }; }
+                onChangedListeners.forEach(fn => fn(changes));
+                return Promise.resolve();
+            }
+        },
+        onChanged: { addListener(fn) { onChangedListeners.push(fn); } }
+    },
+    runtime: {
+        onMessage: { addListener(fn) { tabListeners.push(fn); } }, // content.js tourne dans un « onglet »
+        sendMessage(msg, cb) {
+            // Onglet → background : seuls les listeners du background sont appelés.
+            bgListeners.forEach(fn => fn(msg));
+            if (msg.action === 'setSpeed' && msg.fromDetection) detMsgs++;
+            cb && cb({ speed: bg.speed });
+            return Promise.resolve({ speed: bg.speed });
+        }
+    },
+    tabs: {
+        query() { return Promise.resolve([{ id: 1 }]); },
+        sendMessage(id, msg) { tabListeners.forEach(fn => fn(msg)); return Promise.resolve(); },
+        onCreated: { addListener() {} }
+    }
+};
+
+/* Le background « réel » est simulé par la même logique que background.js :
+   il écoute les messages, met à jour vitesse + stockage et re-diffuse. */
+bgListeners.push(msg => bg.handle(msg));
+
+
+store.defaultSpeed = 1.5;
+document.write('<script src="../content.js"><\/script>');
+</script>
+<script>
+(async () => {
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const ol = document.getElementById('results');
+    const add = (name, ok, d) => { const li = document.createElement('li'); li.textContent = `${name} — ${ok ? 'OK' : 'ÉCHEC'} (${d})`; ol.appendChild(li); };
+    await sleep(1300);
+    const v = document.getElementById('v1'), o = v._savOverlay, l = v._savLabel;
+    const or = o.getBoundingClientRect();
+    add('U1 — vidéo absolute dans un conteneur de hauteur 0 (YouTube) : badge visible', o.style.visibility !== 'hidden' && or.height > 200 && getComputedStyle(l).visibility === 'visible',
+        `overlay=${Math.round(or.width)}×${Math.round(or.height)}, visibility=${o.style.visibility || 'visible'}`);
+    /* Plein écran de TOUT le document (ce que fait youtube.com/watch) */
+    window.__wantFs = true;
+    await new Promise(r => document.addEventListener('fullscreenchange', r, { once: true }));
+    await sleep(300);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true, cancelable: true }));
+    await sleep(150);
+    const r2 = o.getBoundingClientRect();
+    add('U2 — plein écran du document : gros affichage visible', o.style.visibility !== 'hidden' && r2.height > 200 && l.classList.contains('sav-flash'),
+        `overlay=${Math.round(r2.width)}×${Math.round(r2.height)}, parent=${o.parentNode.tagName}, classe=${l.className}`);
+    await document.exitFullscreen().catch(() => {});
+    for (let i = 0; i < 8; i++) ol.appendChild(document.createElement('li'));
+})();
+</script>
+<button id="fsbtn" onclick="document.documentElement.requestFullscreen()">plein écran (document)</button>
+</body></html>

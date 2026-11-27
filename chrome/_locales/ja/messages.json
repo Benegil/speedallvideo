@@ -1,0 +1,138 @@
+{
+  "extDescription": {
+    "message": "あらゆる動画（YouTube、Twitch、Vimeo…）の再生速度を 0.25x〜4x で、全タブまとめて調整。S/D/R ショートカット、Force 1x オプション。"
+  },
+  "optionsTitle": {
+    "message": "SpeedAllVideo — 設定"
+  },
+  "currentSpeed": {
+    "message": "現在の速度"
+  },
+  "slowDownAria": {
+    "message": "速度を落とす"
+  },
+  "speedUpAria": {
+    "message": "速度を上げる"
+  },
+  "resetBtn": {
+    "message": "リセット (1.0x)"
+  },
+  "shortcuts": {
+    "message": "キーボードショートカット"
+  },
+  "slowDown": {
+    "message": "速度を落とす (−$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "speedUp": {
+    "message": "速度を上げる (+$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetSpeed": {
+    "message": "速度をリセット (1x)"
+  },
+  "speedUpdated": {
+    "message": "✓ 速度を更新しました"
+  },
+  "speedStep": {
+    "message": "速度ステップ"
+  },
+  "stepHint": {
+    "message": "± ボタンと S / D ショートカットで使われるステップ値（例: 0.10、0.25、0.5）"
+  },
+  "invalidStep": {
+    "message": "無効なステップ値です（0.01〜4 を使用してください）"
+  },
+  "stepSaved": {
+    "message": "✓ 速度ステップを保存しました"
+  },
+  "force1xTitle": {
+    "message": "1x 強制"
+  },
+  "force1xLabel": {
+    "message": "速度を 1.0x に固定する"
+  },
+  "force1xHint": {
+    "message": "動画の速度を監視し、変更された場合に 1.0x に戻します（サイトが独自の速度を強制する場合に有効、例: 2x）"
+  },
+  "force1xOn": {
+    "message": "✓ 1x 強制を有効にしました"
+  },
+  "force1xOff": {
+    "message": "1x 強制を無効にしました"
+  },
+  "displayTitle": {
+    "message": "表示"
+  },
+  "hideBadgeLabel": {
+    "message": "常時表示される速度バッジを非表示にする"
+  },
+  "hideBadgeHint": {
+    "message": "動画（およびプレイヤー）右上の小さな「Speed …」バッジが表示されなくなります"
+  },
+  "hideFlashLabel": {
+    "message": "変更時の大きな速度表示を非表示にする"
+  },
+  "hideFlashHint": {
+    "message": "速度が変更されたときに動画中央に表示される大きな「Speed …」が表示されなくなります（ボタン、S / D ショートカット）"
+  },
+  "hideBadgeOn": {
+    "message": "✓ 常時バッジを非表示にしました"
+  },
+  "hideBadgeOff": {
+    "message": "常時バッジを再び表示しました"
+  },
+  "hideFlashOn": {
+    "message": "✓ 変更時の大きな表示を非表示にしました"
+  },
+  "hideFlashOff": {
+    "message": "変更時の大きな表示を再び表示しました"
+  },
+  "soundFxLabel": {
+    "message": "速度変更時の音"
+  },
+  "soundFxHint": {
+    "message": "すべての変更時に短いゲーム風の「ピッ」という音（S / D / R ショートカット、ボタン）：ピッチが高いほど速くなります。メニューのスピーカーアイコンでも切り替えられます。動画が全画面のときは常に再生されます（上に表示するものがありません）。"
+  },
+  "soundFxOn": {
+    "message": "✓ 音を追加しました"
+  },
+  "soundFxOff": {
+    "message": "音を削除しました"
+  },
+  "muteAria": {
+    "message": "ボタンの音をミュート"
+  },
+  "unmuteAria": {
+    "message": "ボタンの音をオン"
+  },
+  "settingsAria": {
+    "message": "設定"
+  },
+  "keysDragHint": {
+    "message": "文字をドラッグして他の文字に重ねると、ショートカットを入れ替えられます"
+  },
+  "audioTitle": {
+    "message": "オーディオ"
+  },
+  "withAudioLabel": {
+    "message": "オーディオプレーヤーも速度変更する"
+  },
+  "withAudioHint": {
+    "message": "デフォルトでオフ。Web ページのオーディオプレーヤー（ポッドキャスト、オーディオブック…）にも速度を適用します。ページ上にオーディオプレーヤーがないサイトが再生する音は影響を受けません。"
+  },
+  "withAudioOn": {
+    "message": "✓ オーディオプレーヤーを含めました"
+  },
+  "withAudioOff": {
+    "message": "オーディオプレーヤーを 1x に戻しました"
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "extDescription": {
+    "message": "Accelera o rallenta qualsiasi video (YouTube, Twitch, Vimeo…) da 0.25x a 4x, in tutte le schede. Tasti S/D/R, opzione Forza 1x."
+  },
+  "optionsTitle": {
+    "message": "SpeedAllVideo — Impostazioni"
+  },
+  "currentSpeed": {
+    "message": "Velocità attuale"
+  },
+  "slowDownAria": {
+    "message": "Rallenta"
+  },
+  "speedUpAria": {
+    "message": "Accelera"
+  },
+  "resetBtn": {
+    "message": "Reimposta (1.0x)"
+  },
+  "shortcuts": {
+    "message": "Scorciatoie da tastiera"
+  },
+  "slowDown": {
+    "message": "Rallenta (−$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "speedUp": {
+    "message": "Accelera (+$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetSpeed": {
+    "message": "Reimposta velocità (1x)"
+  },
+  "speedUpdated": {
+    "message": "✓ Velocità aggiornata"
+  },
+  "speedStep": {
+    "message": "Incremento velocità"
+  },
+  "stepHint": {
+    "message": "Incremento usato dai pulsanti ± e dalle scorciatoie S / D (es. 0.10, 0.25, 0.5)"
+  },
+  "invalidStep": {
+    "message": "Incremento non valido (usa 0.01 – 4)"
+  },
+  "stepSaved": {
+    "message": "✓ Incremento velocità salvato"
+  },
+  "force1xTitle": {
+    "message": "Forza 1x"
+  },
+  "force1xLabel": {
+    "message": "Imposta la velocità a 1.0x"
+  },
+  "force1xHint": {
+    "message": "L'estensione controlla il video e riporta la velocità a 1.0x se cambia (utile quando un sito impone la propria velocità, es. 2x)"
+  },
+  "force1xOn": {
+    "message": "✓ Forza 1x attivato"
+  },
+  "force1xOff": {
+    "message": "Forza 1x disattivato"
+  },
+  "displayTitle": {
+    "message": "Visualizzazione"
+  },
+  "hideBadgeLabel": {
+    "message": "Nascondi il badge velocità permanente"
+  },
+  "hideBadgeHint": {
+    "message": "Il piccolo badge “Velocità …” in alto a destra del video (e del player) non viene più mostrato"
+  },
+  "hideFlashLabel": {
+    "message": "Nascondi la grande visualizzazione velocità al cambio"
+  },
+  "hideFlashHint": {
+    "message": "Il grande “Velocità …” al centro del video non appare più quando la velocità cambia (pulsanti, scorciatoie S / D)"
+  },
+  "hideBadgeOn": {
+    "message": "✓ Badge permanente nascosto"
+  },
+  "hideBadgeOff": {
+    "message": "Badge permanente di nuovo visibile"
+  },
+  "hideFlashOn": {
+    "message": "✓ Grande visualizzazione al cambio nascosta"
+  },
+  "hideFlashOff": {
+    "message": "Grande visualizzazione al cambio di nuovo visibile"
+  },
+  "soundFxLabel": {
+    "message": "Suono al cambio di velocità"
+  },
+  "soundFxHint": {
+    "message": "Un breve “blip” stile videogioco ad ogni cambio (scorciatoie S / D / R, pulsanti): pitch più alto = più veloce. Attivabile/disattivabile anche dall'icona dell'altoparlante nel menu. Riprodotto sempre quando il video è a schermo intero (niente può essere sovrapposto)."
+  },
+  "soundFxOn": {
+    "message": "✓ Suono attivato"
+  },
+  "soundFxOff": {
+    "message": "Suono disattivato"
+  },
+  "muteAria": {
+    "message": "Disattiva i suoni dei pulsanti"
+  },
+  "unmuteAria": {
+    "message": "Attiva i suoni dei pulsanti"
+  },
+  "settingsAria": {
+    "message": "Impostazioni"
+  },
+  "keysDragHint": {
+    "message": "Trascina una lettera su un'altra per scambiare le scorciatoie"
+  },
+  "audioTitle": {
+    "message": "Audio"
+  },
+  "withAudioLabel": {
+    "message": "Accelera anche i player audio"
+  },
+  "withAudioHint": {
+    "message": "Disattivato per impostazione predefinita. Applica la velocità anche ai player audio delle pagine web (podcast, audiolibri…). I suoni riprodotti da un sito senza un player audio nella pagina non sono interessati."
+  },
+  "withAudioOn": {
+    "message": "✓ Player audio inclusi"
+  },
+  "withAudioOff": {
+    "message": "Player audio tornano a 1x"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "speedallvideo",
+  "version": "1.3.0",
+  "private": true,
+  "description": "SpeedAllVideo — extension Chrome (outils de développement)",
+  "scripts": {
+    "test": "node tools/run-tests.mjs",
+    "build": "sh tools/build.sh"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.66.0-alpha-2026-11-18"
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "extDescription": {
+    "message": "Versnel of vertraag elke video (YouTube, Twitch, Vimeo…) van 0,25x tot 4x, in alle tabbladen. Sneltoetsen S/D/R, optie Force 1x."
+  },
+  "optionsTitle": {
+    "message": "SpeedAllVideo — Instellingen"
+  },
+  "currentSpeed": {
+    "message": "Huidige snelheid"
+  },
+  "slowDownAria": {
+    "message": "Langzamer"
+  },
+  "speedUpAria": {
+    "message": "Sneller"
+  },
+  "resetBtn": {
+    "message": "Reset (1,0x)"
+  },
+  "shortcuts": {
+    "message": "Sneltoetsen"
+  },
+  "slowDown": {
+    "message": "Langzamer (−$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "speedUp": {
+    "message": "Sneller (+$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetSpeed": {
+    "message": "Snelheid resetten (1x)"
+  },
+  "speedUpdated": {
+    "message": "✓ Snelheid bijgewerkt"
+  },
+  "speedStep": {
+    "message": "Snelheidsstap"
+  },
+  "stepHint": {
+    "message": "Stap die wordt gebruikt door de ±-knoppen en de S / D-sneltoetsen (bijv. 0,10, 0,25, 0,5)"
+  },
+  "invalidStep": {
+    "message": "Ongeldige stap (gebruik 0,01 – 4)"
+  },
+  "stepSaved": {
+    "message": "✓ Snelheidsstap opgeslagen"
+  },
+  "force1xTitle": {
+    "message": "Force 1x"
+  },
+  "force1xLabel": {
+    "message": "Snelheid forceren naar 1,0x"
+  },
+  "force1xHint": {
+    "message": "De extensie bewaakt de video en zet de snelheid terug naar 1,0x als deze verandert (handig als een site zijn eigen snelheid afdwingt, bijv. 2x)"
+  },
+  "force1xOn": {
+    "message": "✓ Force 1x ingeschakeld"
+  },
+  "force1xOff": {
+    "message": "Force 1x uitgeschakeld"
+  },
+  "displayTitle": {
+    "message": "Weergave"
+  },
+  "hideBadgeLabel": {
+    "message": "De permanente snelheidsbadge verbergen"
+  },
+  "hideBadgeHint": {
+    "message": "De kleine badge “Snelheid …” rechtsboven in de video (en speler) wordt niet meer getoond"
+  },
+  "hideFlashLabel": {
+    "message": "De grote snelheidsweergave bij wijziging verbergen"
+  },
+  "hideFlashHint": {
+    "message": "De grote “Snelheid …” in het midden van de video verschijnt niet meer bij snelheidswijziging (knoppen, S / D-sneltoetsen)"
+  },
+  "hideBadgeOn": {
+    "message": "✓ Permanente badge verborgen"
+  },
+  "hideBadgeOff": {
+    "message": "Permanente badge weer getoond"
+  },
+  "hideFlashOn": {
+    "message": "✓ Grote weergave bij wijziging verborgen"
+  },
+  "hideFlashOff": {
+    "message": "Grote weergave bij wijziging weer getoond"
+  },
+  "soundFxLabel": {
+    "message": "Geluidssignaal bij snelheidswijziging"
+  },
+  "soundFxHint": {
+    "message": "Een kort spelachtig “bliepje” bij elke wijziging (S / D / R-sneltoetsen, knoppen): hogere toon = sneller. Ook in te schakelen via het luidsprekerpictogram in het menu. Wordt altijd afgespeeld als de video zelf volledig scherm is (er kan niets boven worden weergegeven)."
+  },
+  "soundFxOn": {
+    "message": "✓ Geluidssignaal ingeschakeld"
+  },
+  "soundFxOff": {
+    "message": "Geluidssignaal uitgeschakeld"
+  },
+  "muteAria": {
+    "message": "Geluid van knoppen dempen"
+  },
+  "unmuteAria": {
+    "message": "Geluid van knoppen inschakelen"
+  },
+  "settingsAria": {
+    "message": "Instellingen"
+  },
+  "keysDragHint": {
+    "message": "Sleep een letter naar een andere om de sneltoetsen te wisselen"
+  },
+  "audioTitle": {
+    "message": "Audio"
+  },
+  "withAudioLabel": {
+    "message": "Ook audiospelers versnellen"
+  },
+  "withAudioHint": {
+    "message": "Standaard uit. Past de snelheid ook toe op audiospelers van webpagina’s (podcasts, audioboeken…). Geluiden die een site afspeelt zonder audiospeler op de pagina, worden niet beïnvloed."
+  },
+  "withAudioOn": {
+    "message": "✓ Audiospelers meegenomen"
+  },
+  "withAudioOff": {
+    "message": "Audiospelers terug naar 1x"
+  }
+}

@@ -1,0 +1,109 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Test conteneur défilant</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#222;color:#eee;font-family:sans-serif}
+header{height:60px;background:#333;display:flex;align-items:center;padding:0 12px}
+main{height:calc(100% - 60px);overflow:auto}
+.gap{height:100px}</style></head><body>
+<header>En-tête normal (la page ne défile pas : c'est &lt;main&gt; qui défile, comme Civitai)</header>
+<main id="m"><div class="gap"></div>
+<video id="v1" src="video.mp4" width="400" height="225" muted autoplay loop></video>
+<div style="height:2000px"></div><ol id="results"></ol></main>
+<script>
+/* ================= Simulation de browser.* =================
+   Fidèle au comportement réel testé :
+   - le background est « froid » au démarrage (speed=1.0) et ne charge son
+     stockage qu'asynchronement, puis re-diffuse à tous les onglets ;
+   - storage.sync.set notifie onChanged (comme Firefox) ;
+   - runtime.sendMessage(msg, cb) répond via callback ET renvoie une Promise. */
+const store = { defaultSpeed: 1.0, speedStep: '0.25', forceOneX: false };
+const bgListeners = [];   // listeners du background SIMULÉ (ci-dessous)
+const tabListeners = [];  // listeners des « onglets » : content.js s'y enregistre
+let detMsgs = 0;          // messages setSpeed reçus avec fromDetection
+
+const bclamp = s => Math.min(4, Math.max(0.25, s));
+function broadcast() {
+    tabListeners.forEach(fn => fn({ action: 'setSpeed', speed: bg.speed }));
+}
+const bg = {
+    speed: 1.0, // froid : pas encore chargé le stockage (comme au rechargement d'extension)
+    handle(msg, cb) {
+        if (msg.action === 'setSpeed') {
+            this.speed = bclamp(msg.speed);
+            store.defaultSpeed = this.speed;
+            broadcast();
+        } else if (msg.action === 'getCurrentSpeed') {
+            cb && cb({ speed: this.speed });
+        }
+    },
+    /* Rechargement simulé : le background repart à 1.0 puis recharge son stockage. */
+    reload() {
+        this.speed = 1.0;
+        setTimeout(() => {
+            if (store.defaultSpeed) {
+                this.speed = bclamp(store.defaultSpeed);
+                broadcast();
+            }
+        }, 50);
+    }
+};
+
+const onChangedListeners = [];
+window.browser = {
+    storage: {
+        sync: {
+            get(keys) {
+                const out = {};
+                (Array.isArray(keys) ? keys : [keys]).forEach(k => { if (k in store) out[k] = store[k]; });
+                return Promise.resolve(out);
+            },
+            set(obj) {
+                const changes = {};
+                for (const k in obj) { store[k] = obj[k]; changes[k] = { newValue: obj[k] }; }
+                onChangedListeners.forEach(fn => fn(changes));
+                return Promise.resolve();
+            }
+        },
+        onChanged: { addListener(fn) { onChangedListeners.push(fn); } }
+    },
+    runtime: {
+        onMessage: { addListener(fn) { tabListeners.push(fn); } }, // content.js tourne dans un « onglet »
+        sendMessage(msg, cb) {
+            // Onglet → background : seuls les listeners du background sont appelés.
+            bgListeners.forEach(fn => fn(msg));
+            if (msg.action === 'setSpeed' && msg.fromDetection) detMsgs++;
+            cb && cb({ speed: bg.speed });
+            return Promise.resolve({ speed: bg.speed });
+        }
+    },
+    tabs: {
+        query() { return Promise.resolve([{ id: 1 }]); },
+        sendMessage(id, msg) { tabListeners.forEach(fn => fn(msg)); return Promise.resolve(); },
+        onCreated: { addListener() {} }
+    }
+};
+
+/* Le background « réel » est simulé par la même logique que background.js :
+   il écoute les messages, met à jour vitesse + stockage et re-diffuse. */
+bgListeners.push(msg => bg.handle(msg));
+
+
+store.defaultSpeed = 1.5;
+document.write('<script src="../content.js"><\/script>');
+</script>
+<script>
+(async () => {
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const m = document.getElementById('m'), ol = document.getElementById('results');
+    const add = (name, ok, d) => { const li = document.createElement('li'); li.textContent = `${name} — ${ok ? 'OK' : 'ÉCHEC'} (${d})`; ol.appendChild(li); document.body.appendChild(li.cloneNode(true)).className = 'res'; };
+    await sleep(1300);
+    const v = document.getElementById('v1');
+    const mt = m.getBoundingClientRect().top;
+    // vidéo à moitié sous l'en-tête ; mesure 100 ms après (avant le tour de boucle de 1 s)
+    m.scrollTop = 200; await sleep(100);
+    let lr = v._savLabel.getBoundingClientRect(), vr = v.getBoundingClientRect();
+    add('P1 — conteneur défilant : badge pas sur l\'en-tête', lr.top >= mt, `label.top=${Math.round(lr.top)}, main.top=${mt}`);
+    add('P2 — badge suit le défilement interne tout de suite', Math.abs(lr.top - (mt + 6)) < 3, `label.top=${Math.round(lr.top)}, attendu≈${mt + 6}, video.top=${Math.round(vr.top)}`);
+    // vidéo entièrement sortie par le haut
+    m.scrollTop = 400; await sleep(100);
+    add('P3 — vidéo sortie du conteneur : badge masqué', v._savOverlay.style.visibility === 'hidden', `visibility=${v._savOverlay.style.visibility}`);
+})();
+</script></body></html>
