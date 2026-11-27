@@ -3,6 +3,8 @@
 Extension Chrome : contrôle de la vitesse de lecture des vidéos sur tous les onglets, de **0.25x à 4x**.
 Dérivée de [SpeedyVideo](https://addons.mozilla.org/fr/firefox/addon/speedy-video/) (Lin Cheng, MIT), réécrite et resserrée.
 
+**Installer** : [Chrome Web Store](https://chromewebstore.google.com/detail/jjceccjojookhjpjgfpkejggiangilok) (lien actif dès la fin de l'examen par Google) · version Firefox : [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/speedallvideo/).
+
 ## Fonctionnalités
 
 - **Vitesse partagée** : un seul réglage pour tous les onglets ; l'icône affiche la vitesse courante (label long défilant).

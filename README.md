@@ -1,9 +1,14 @@
 # SpeedAllVideo
 
-Extension Firefox : contrôle de la vitesse de lecture des vidéos sur tous les onglets, de **0.25x à 4x**.
+Extension Firefox et Chrome : contrôle de la vitesse de lecture des vidéos sur tous les onglets, de **0.25x à 4x**.
 Dérivée de [SpeedyVideo](https://addons.mozilla.org/fr/firefox/addon/speedy-video/) (Lin Cheng, MIT), réécrite et resserrée.
 
-**Version Chrome** (Manifest V3, Chrome Web Store) : dossier [`chrome/`](chrome/), avec son propre README, ses tests et sa fiche Store (`chrome/store/`).
+## Installer
+
+- **Firefox** : [SpeedAllVideo sur Firefox Add-ons](https://addons.mozilla.org/firefox/addon/speedallvideo/)
+- **Chrome** : [SpeedAllVideo sur le Chrome Web Store](https://chromewebstore.google.com/detail/jjceccjojookhjpjgfpkejggiangilok) (lien actif dès la fin de l'examen par Google)
+
+La version Chrome (Manifest V3) est dans le dossier [`chrome/`](chrome/), avec son propre README, ses tests et sa fiche Store (`chrome/store/`).
 
 ## Aperçu
 
