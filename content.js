@@ -82,12 +82,17 @@ if (!document.getElementById('sav-style')) {
             left: 50%; top: 50%;
             transform: translate(-50%, -50%);
         }
-        /* Badge permanent : 10px en haut à droite, lisible sur n'importe quel fond */
+        /* Badge permanent : 10px en haut à droite, lisible sur n'importe quel fond.
+           Blanc cerclé de noir (contour 1px + halo) : lisible sur blanc, gris,
+           noir. mix-blend-mode: difference rendait le texte invisible sur les
+           gris moyens (128 − 128 ≈ 0). */
         .sav-label.sav-persistent {
             font-size: 10px;
             font-weight: 600;
-            opacity: .85;
-            mix-blend-mode: difference;
+            opacity: .95;
+            text-shadow: -1px -1px 0 rgba(0,0,0,.7), 1px -1px 0 rgba(0,0,0,.7),
+                         -1px 1px 0 rgba(0,0,0,.7), 1px 1px 0 rgba(0,0,0,.7),
+                         0 0 3px rgba(0,0,0,.9);
             left: auto; right: 6px; top: 6px;
         }
     `;
@@ -143,15 +148,35 @@ function visibleTop(target, r) {
     return Math.max(r.top, y - 4);
 }
 
-function place(o, target) { // cale l'overlay sur la partie visible de la cible
+/* Partie de la cible réellement visible : rognée par la fenêtre et par chaque
+   ancêtre qui coupe son contenu (overflow ≠ visible). Ex : Civitai fait défiler
+   un <div> interne sous son en-tête — la vidéo y est rognée, mais notre overlay
+   (position:fixed) ne l'était pas et débordait sur l'en-tête. */
+function clipRect(target) {
     const r = target.getBoundingClientRect();
-    const top = visibleTop(target, r);
-    const h = r.bottom - top;
-    o.style.visibility = h < 20 ? 'hidden' : ''; // cible entièrement masquée : pas de badge
-    o.style.width = r.width + 'px';
+    let top = Math.max(r.top, 0), left = Math.max(r.left, 0);
+    let bottom = Math.min(r.bottom, innerHeight), right = Math.min(r.right, innerWidth);
+    for (let a = target.parentElement; a && a !== document.documentElement; a = a.parentElement) {
+        const cs = getComputedStyle(a);
+        if (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') {
+            const ar = a.getBoundingClientRect();
+            if (cs.overflowY !== 'visible') { top = Math.max(top, ar.top); bottom = Math.min(bottom, ar.bottom); }
+            if (cs.overflowX !== 'visible') { left = Math.max(left, ar.left); right = Math.min(right, ar.right); }
+        }
+        if (cs.position === 'fixed') break; // au-delà, les ancêtres ne rognent plus
+    }
+    return { top, left, bottom, right };
+}
+
+function place(o, target) { // cale l'overlay sur la partie visible de la cible
+    const c = clipRect(target);
+    const top = c.bottom > c.top ? visibleTop(target, c) : c.top;
+    const h = c.bottom - top, w = c.right - c.left;
+    o.style.visibility = h < 20 || w < 40 ? 'hidden' : ''; // cible (quasi) masquée : pas de badge
+    o.style.width = Math.max(0, w) + 'px';
     o.style.height = Math.max(0, h) + 'px';
     o.style.top = top + 'px';
-    o.style.left = r.left + 'px';
+    o.style.left = c.left + 'px';
 }
 
 function fit(v) { // recadre l'overlay sur sa vidéo
@@ -237,8 +262,17 @@ function globalBadge(spd) {
 
 // globalBadge (pas un simple recadrage) : il se masque si une vidéo
 // visible a pris le relais, sinon deux « Speed » s'affichaient au défilement.
-on(window, 'scroll', () => { fitAll(); globalBadge(lastSet); }, { passive: true });
-on(window, 'resize', () => { fitAll(); globalBadge(lastSet); });
+// Capture sur document : attrape AUSSI le défilement des conteneurs internes
+// (scroll ne remonte pas). Regroupé par image (rAF) : un fil d'actualité peut
+// compter des dizaines de vidéos.
+let refitting = false;
+const refit = () => {
+    if (refitting) return;
+    refitting = true;
+    requestAnimationFrame(() => { refitting = false; if (!dead) { fitAll(); globalBadge(lastSet); } });
+};
+on(document, 'scroll', refit, { passive: true, capture: true });
+on(window, 'resize', refit);
 
 /* ---------- Application de la vitesse ---------- */
 function setRate(v, s) {
