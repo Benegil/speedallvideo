@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="optionsTitle">SpeedAllVideo — Settings</title>
+<style>
+  :root {
+    --bg: #e9eaec;
+    --card: #ffffff;
+    --text: #222;
+    --sub: #555;
+    --border: #dcdfe3;
+    --primary: #2b7de9;
+    --primary-h: #1f68c9;
+    --accent: #f2733d;
+    --accent-h: #e0622c;
+    --btn-bg: #ffffff;
+    --btn-text: #222;
+    --btn-border: #d4d7dc;
+    --track: #d9dce1;
+    --key-bg: #eceef1;
+    --key-border: #cfd3d9;
+    --key-text: #333;
+    --ok: #28a745;
+    --shadow: 0 1px 4px rgba(0,0,0,.10);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #191b1e;
+      --card: #2a2d31;
+      --text: #e4e6e9;
+      --sub: #9aa0a8;
+      --border: #3d4147;
+      --primary: #6ea8fe;
+      --primary-h: #5a93e0;
+      --accent: #ff8b4d;
+      --accent-h: #f2733d;
+      --btn-bg: #34383d;
+      --btn-text: #e4e6e9;
+      --btn-border: #4a4f56;
+      --track: #4a4f56;
+      --key-bg: #3a3e44;
+      --key-border: #565b62;
+      --key-text: #e4e6e9;
+      --ok: #5cdb7a;
+      --shadow: 0 1px 4px rgba(0,0,0,.35);
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 20px 12px;
+    min-height: 100vh;
+  }
+
+  .page { width: 100%; max-width: 340px; }
+
+  .header { margin-bottom: 14px; padding: 0 2px; }
+  h1 { font-size: 17px; font-weight: 700; color: var(--primary); }
+
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 18px 16px;
+  }
+  .card + .card { margin-top: 14px; }
+
+  .label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--sub);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 8px;
+  }
+
+  .speed {
+    text-align: center;
+    font-size: 46px;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1.1;
+    margin-bottom: 14px;
+  }
+
+  .row { display: flex; align-items: center; gap: 10px; }
+
+  .step-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1; text-align: center;
+    flex-shrink: 0;
+    transition: background .15s;
+  }
+  .step-btn:hover { background: var(--primary-h); }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1; min-width: 0;
+    height: 6px; border-radius: 3px;
+    background: var(--track);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--primary); cursor: pointer; border: none;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--primary); cursor: pointer; border: none;
+  }
+
+  .presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; }
+  .preset {
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    border: 1px solid var(--btn-border);
+    border-radius: 6px;
+    padding: 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .preset:hover { border-color: var(--primary); }
+  .preset.active { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+
+  .reset {
+    display: block; width: 100%; margin-top: 14px;
+    background: var(--accent); color: #fff;
+    border: none; padding: 11px;
+    font-size: 15px; font-weight: 700; text-align: center;
+    border-radius: 8px; cursor: pointer;
+    transition: background .15s;
+  }
+  .reset:hover { background: var(--accent-h); }
+
+  #status {
+    text-align: center; margin-top: 10px;
+    font-weight: 600; font-size: 13px;
+    color: var(--ok); min-height: 18px;
+  }
+
+  /* ---- Pas de vitesse (step) ---- */
+  .step-input {
+    width: 90px;
+    padding: 8px 10px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--btn-bg);
+    border: 1px solid var(--btn-border);
+    border-radius: 6px;
+    outline: none;
+  }
+  .step-input:focus { border-color: var(--primary); }
+  .suffix { font-size: 15px; font-weight: 700; color: var(--sub); }
+  .hint { margin-top: 8px; font-size: 12px; color: var(--sub); }
+
+  /* ---- Force 1x / Affichage ---- */
+  .force-row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .force-row input[type="checkbox"] {
+    width: 20px; height: 20px;
+    accent-color: var(--primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .force-label { font-size: 15px; font-weight: 600; color: var(--text); }
+  .hint + .force-row { margin-top: 16px; } /* 2e option après le texte d'aide de la 1re */
+
+  /* ---- Raccourcis clavier ---- */
+  .keys { list-style: none; }
+  .key-item { display: flex; align-items: center; padding: 5px 0; }
+  .key {
+    background: var(--key-bg);
+    border: 1px solid var(--key-border);
+    color: var(--key-text);
+    border-radius: 5px;
+    padding: 4px 0; width: 32px;
+    font-size: 13px; font-weight: 700; text-align: center;
+    margin-right: 12px;
+    font-family: monospace;
+    flex-shrink: 0;
+  }
+  .key-desc { font-size: 14px; color: var(--text); }
+  .key[draggable] { cursor: grab; transition: transform .12s, box-shadow .12s; }
+  .key.dragging { opacity: .4; }
+  .key.over { transform: scale(1.15); box-shadow: 0 0 0 2px var(--primary); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="header">
+    <h1>SpeedAllVideo</h1>
+  </div>
+
+  <!-- Carte vitesse -->
+  <div class="card">
+    <div class="label" data-i18n="currentSpeed">Current Speed</div>
+    <div class="speed" id="speed">1.00x</div>
+
+    <div class="row">
+      <button class="step-btn" id="minus" data-i18n-aria="slowDownAria">−</button>
+      <input type="range" id="slider" min="0.25" max="4" step="0.25" value="1">
+      <button class="step-btn" id="plus" data-i18n-aria="speedUpAria">+</button>
+    </div>
+
+    <div class="presets">
+      <button class="preset" data-speed="0.25">0.25</button>
+      <button class="preset" data-speed="0.5">0.5</button>
+      <button class="preset" data-speed="0.75">0.75</button>
+      <button class="preset" data-speed="1.0">1.0</button>
+      <button class="preset" data-speed="1.5">1.5</button>
+      <button class="preset" data-speed="1.75">1.75</button>
+      <button class="preset" data-speed="2.0">2.0</button>
+      <button class="preset" data-speed="3.0">3.0</button>
+    </div>
+
+    <button class="reset" id="reset" data-i18n="resetBtn">Reset (1.0x)</button>
+    <div id="status"></div>
+  </div>
+
+  <!-- Carte pas de vitesse -->
+  <div class="card">
+    <div class="label" data-i18n="speedStep">Speed Step</div>
+    <div class="row">
+      <input type="number" id="stepInput" class="step-input" min="0.01" max="4" step="any" value="0.25">
+      <span class="suffix">x</span>
+    </div>
+    <div class="hint" data-i18n="stepHint"></div>
+  </div>
+
+  <!-- Carte Force 1x -->
+  <div class="card">
+    <div class="label" data-i18n="force1xTitle">Force 1x</div>
+    <label class="force-row">
+      <input type="checkbox" id="forceOneX">
+      <span class="force-label" data-i18n="force1xLabel">Force speed to 1.0x</span>
+    </label>
+    <div class="hint" data-i18n="force1xHint"></div>
+  </div>
+
+  <!-- Carte affichage -->
+  <div class="card">
+    <div class="label" data-i18n="displayTitle">Display</div>
+    <label class="force-row">
+      <input type="checkbox" id="hideBadge">
+      <span class="force-label" data-i18n="hideBadgeLabel">Hide the permanent speed badge</span>
+    </label>
+    <div class="hint" data-i18n="hideBadgeHint"></div>
+    <label class="force-row">
+      <input type="checkbox" id="hideFlash">
+      <span class="force-label" data-i18n="hideFlashLabel">Hide the big speed display on change</span>
+    </label>
+    <div class="hint" data-i18n="hideFlashHint"></div>
+    <label class="force-row">
+      <input type="checkbox" id="soundFx">
+      <span class="force-label" data-i18n="soundFxLabel">Sound cue on speed change</span>
+    </label>
+    <div class="hint" data-i18n="soundFxHint"></div>
+  </div>
+
+  <!-- Carte audio -->
+  <div class="card">
+    <div class="label" data-i18n="audioTitle">Audio</div>
+    <label class="force-row">
+      <input type="checkbox" id="withAudio">
+      <span class="force-label" data-i18n="withAudioLabel">Also speed up audio players</span>
+    </label>
+    <div class="hint" data-i18n="withAudioHint"></div>
+  </div>
+
+  <!-- Carte raccourcis -->
+  <div class="card">
+    <div class="label" data-i18n="shortcuts">Keyboard Shortcuts</div>
+    <ul class="keys">
+      <li class="key-item">
+        <span class="key" data-act="slow" draggable="true">S</span>
+        <span class="key-desc" id="slowDesc">Slow down (−0.25x)</span>
+      </li>
+      <li class="key-item">
+        <span class="key" data-act="fast" draggable="true">D</span>
+        <span class="key-desc" id="fastDesc">Speed up (+0.25x)</span>
+      </li>
+      <li class="key-item">
+        <span class="key" data-act="reset" draggable="true">R</span>
+        <span class="key-desc" data-i18n="resetSpeed">Reset speed (1x)</span>
+      </li>
+    </ul>
+    <div class="hint" data-i18n="keysDragHint"></div>
+  </div>
+</div>
+
+<script src="compat.js"></script>
+<script src="i18n.js"></script>
+<script src="sound.js"></script>
+<script src="keymap.js"></script>
+<script src="options.js"></script>
+</body>
+</html>

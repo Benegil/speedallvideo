@@ -1,0 +1,138 @@
+{
+  "extDescription": {
+    "message": "Przyspiesz lub zwolnij każdy film (YouTube, Twitch, Vimeo…) od 0,25x do 4x we wszystkich kartach. Skróty S/D/R, opcja Force 1x."
+  },
+  "optionsTitle": {
+    "message": "SpeedAllVideo — Ustawienia"
+  },
+  "currentSpeed": {
+    "message": "Bieżąca prędkość"
+  },
+  "slowDownAria": {
+    "message": "Zwolnij"
+  },
+  "speedUpAria": {
+    "message": "Przyspiesz"
+  },
+  "resetBtn": {
+    "message": "Reset (1,0x)"
+  },
+  "shortcuts": {
+    "message": "Skróty klawiszowe"
+  },
+  "slowDown": {
+    "message": "Zwolnij (−$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "speedUp": {
+    "message": "Przyspiesz (+$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetSpeed": {
+    "message": "Resetuj prędkość (1x)"
+  },
+  "speedUpdated": {
+    "message": "✓ Prędkość zaktualizowana"
+  },
+  "speedStep": {
+    "message": "Krok prędkości"
+  },
+  "stepHint": {
+    "message": "Krok używany przez przyciski ± i skróty S / D (np. 0,10, 0,25, 0,5)"
+  },
+  "invalidStep": {
+    "message": "Nieprawidłowy krok (użyj 0,01 – 4)"
+  },
+  "stepSaved": {
+    "message": "✓ Krok prędkości zapisany"
+  },
+  "force1xTitle": {
+    "message": "Wymuś 1x"
+  },
+  "force1xLabel": {
+    "message": "Wymuś prędkość 1,0x"
+  },
+  "force1xHint": {
+    "message": "Rozszerzenie śledzi film i przywraca prędkość do 1,0x, jeśli ulegnie zmianie (przydatne, gdy strona narzuca własną prędkość, np. 2x)"
+  },
+  "force1xOn": {
+    "message": "✓ Wymuszenie 1x włączone"
+  },
+  "force1xOff": {
+    "message": "Wymuszenie 1x wyłączone"
+  },
+  "displayTitle": {
+    "message": "Wyświetlanie"
+  },
+  "hideBadgeLabel": {
+    "message": "Ukryj stały odznakę prędkości"
+  },
+  "hideBadgeHint": {
+    "message": "Mała odznaka „Speed …” w prawym górnym rogu filmu (i odtwarzacza) nie jest już wyświetlana"
+  },
+  "hideFlashLabel": {
+    "message": "Ukryj duże wyświetlanie prędkości przy zmianie"
+  },
+  "hideFlashHint": {
+    "message": "Duży napis „Speed …” na środku filmu nie pojawia się już przy zmianie prędkości (przyciski, skróty S / D)"
+  },
+  "hideBadgeOn": {
+    "message": "✓ Stała odznaka ukryta"
+  },
+  "hideBadgeOff": {
+    "message": "Stała odznaka ponownie widoczna"
+  },
+  "hideFlashOn": {
+    "message": "✓ Duże wyświetlanie przy zmianie ukryte"
+  },
+  "hideFlashOff": {
+    "message": "Duże wyświetlanie przy zmianie ponownie widoczne"
+  },
+  "soundFxLabel": {
+    "message": "Dźwięk przy zmianie prędkości"
+  },
+  "soundFxHint": {
+    "message": "Krótki „blip” w stylu gry przy każdej zmianie (skróty S / D / R, przyciski): wyższy ton = szybsza prędkość. Przełączany też ikoną głośnika w menu. Odtwarzany zawsze, gdy sam film jest w trybie pełnoekranowym (nic nie może się nad nim wyświetlić)."
+  },
+  "soundFxOn": {
+    "message": "✓ Dźwięk przy zmianie włączony"
+  },
+  "soundFxOff": {
+    "message": "Dźwięk przy zmianie wyłączony"
+  },
+  "muteAria": {
+    "message": "Wycisz dźwięki przycisków"
+  },
+  "unmuteAria": {
+    "message": "Włącz dźwięki przycisków"
+  },
+  "settingsAria": {
+    "message": "Ustawienia"
+  },
+  "keysDragHint": {
+    "message": "Przeciągnij literę na inną, aby zamienić skróty"
+  },
+  "audioTitle": {
+    "message": "Audio"
+  },
+  "withAudioLabel": {
+    "message": "Przyspieszaj też odtwarzacze audio"
+  },
+  "withAudioHint": {
+    "message": "Wyłączone domyślnie. Stosuje prędkość też do odtwarzaczy audio na stronach (podcasty, audiobooki…). Dźwięki odtwarzane przez stronę bez odtwarzacza audio na stronie nie są objęte."
+  },
+  "withAudioOn": {
+    "message": "✓ Odtwarzacze audio uwzględnione"
+  },
+  "withAudioOff": {
+    "message": "Odtwarzacze audio wracają do 1x"
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "extDescription": {
+    "message": "Speed up or slow down any video (YouTube, Twitch, Vimeo…) from 0.25x to 4x, across all tabs. S/D/R shortcuts, Force 1x option."
+  },
+  "optionsTitle": {
+    "message": "SpeedAllVideo — Settings"
+  },
+  "currentSpeed": {
+    "message": "Current Speed"
+  },
+  "slowDownAria": {
+    "message": "Slow down"
+  },
+  "speedUpAria": {
+    "message": "Speed up"
+  },
+  "resetBtn": {
+    "message": "Reset (1.0x)"
+  },
+  "shortcuts": {
+    "message": "Keyboard Shortcuts"
+  },
+  "slowDown": {
+    "message": "Slow down (−$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "speedUp": {
+    "message": "Speed up (+$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetSpeed": {
+    "message": "Reset speed (1x)"
+  },
+  "speedUpdated": {
+    "message": "✓ Speed updated"
+  },
+  "speedStep": {
+    "message": "Speed Step"
+  },
+  "stepHint": {
+    "message": "Step used by the ± buttons and the S / D shortcuts (e.g. 0.10, 0.25, 0.5)"
+  },
+  "invalidStep": {
+    "message": "Invalid step (use 0.01 – 4)"
+  },
+  "stepSaved": {
+    "message": "✓ Speed Step saved"
+  },
+  "force1xTitle": {
+    "message": "Force 1x"
+  },
+  "force1xLabel": {
+    "message": "Force speed to 1.0x"
+  },
+  "force1xHint": {
+    "message": "The extension watches the video and puts the speed back to 1.0x if it changes (useful when a site forces its own speed, e.g. 2x)"
+  },
+  "force1xOn": {
+    "message": "✓ Force 1x enabled"
+  },
+  "force1xOff": {
+    "message": "Force 1x disabled"
+  },
+  "displayTitle": {
+    "message": "Display"
+  },
+  "hideBadgeLabel": {
+    "message": "Hide the permanent speed badge"
+  },
+  "hideBadgeHint": {
+    "message": "The small “Speed …” badge at the top right of the video (and player) is no longer shown"
+  },
+  "hideFlashLabel": {
+    "message": "Hide the big speed display on change"
+  },
+  "hideFlashHint": {
+    "message": "The large “Speed …” in the middle of the video no longer appears when the speed changes (buttons, S / D shortcuts)"
+  },
+  "hideBadgeOn": {
+    "message": "✓ Permanent badge hidden"
+  },
+  "hideBadgeOff": {
+    "message": "Permanent badge shown again"
+  },
+  "hideFlashOn": {
+    "message": "✓ Big display on change hidden"
+  },
+  "hideFlashOff": {
+    "message": "Big display on change shown again"
+  },
+  "soundFxLabel": {
+    "message": "Sound cue on speed change"
+  },
+  "soundFxHint": {
+    "message": "A short game-like \"blip\" on every change (S / D / R shortcuts, buttons): higher pitch = faster. Also toggled by the speaker icon in the menu. Always played when the video itself is fullscreen (nothing can be displayed over it)."
+  },
+  "soundFxOn": {
+    "message": "✓ Sound cue enabled"
+  },
+  "soundFxOff": {
+    "message": "Sound cue disabled"
+  },
+  "muteAria": {
+    "message": "Mute button sounds"
+  },
+  "unmuteAria": {
+    "message": "Turn button sounds on"
+  },
+  "settingsAria": {
+    "message": "Settings"
+  },
+  "keysDragHint": {
+    "message": "Drag a letter onto another to swap the shortcuts"
+  },
+  "audioTitle": {
+    "message": "Audio"
+  },
+  "withAudioLabel": {
+    "message": "Also speed up audio players"
+  },
+  "withAudioHint": {
+    "message": "Off by default. Applies the speed to the audio players of web pages too (podcasts, audiobooks…). Sounds a site plays without an audio player on the page are not affected."
+  },
+  "withAudioOn": {
+    "message": "✓ Audio players included"
+  },
+  "withAudioOff": {
+    "message": "Audio players back to 1x"
+  }
+}

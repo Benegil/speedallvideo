@@ -1,0 +1,120 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Test silence (pas de ratechange en continu)</title>
+<style>body{margin:0;background:#222;color:#eee;font-family:sans-serif}</style></head><body>
+<p>À vitesse stable, le plugin n'écrit plus rien : le lecteur du site n'affiche pas son propre indicateur en boucle</p>
+<video id="v1" src="video.mp4" width="480" height="270" muted autoplay loop></video>
+<ol id="results"></ol>
+<script>
+/* ================= Simulation de browser.* =================
+   Fidèle au comportement réel testé :
+   - le background est « froid » au démarrage (speed=1.0) et ne charge son
+     stockage qu'asynchronement, puis re-diffuse à tous les onglets ;
+   - storage.sync.set notifie onChanged (comme Firefox) ;
+   - runtime.sendMessage(msg, cb) répond via callback ET renvoie une Promise. */
+const store = { defaultSpeed: 1.0, speedStep: '0.25', forceOneX: false };
+const bgListeners = [];   // listeners du background SIMULÉ (ci-dessous)
+const tabListeners = [];  // listeners des « onglets » : content.js s'y enregistre
+let detMsgs = 0;          // messages setSpeed reçus avec fromDetection
+
+const bclamp = s => Math.min(4, Math.max(0.25, s));
+function broadcast() {
+    tabListeners.forEach(fn => fn({ action: 'setSpeed', speed: bg.speed }));
+}
+const bg = {
+    speed: 1.0, // froid : pas encore chargé le stockage (comme au rechargement d'extension)
+    handle(msg, cb) {
+        if (msg.action === 'setSpeed') {
+            this.speed = bclamp(msg.speed);
+            store.defaultSpeed = this.speed;
+            broadcast();
+        } else if (msg.action === 'getCurrentSpeed') {
+            cb && cb({ speed: this.speed });
+        }
+    },
+    /* Rechargement simulé : le background repart à 1.0 puis recharge son stockage. */
+    reload() {
+        this.speed = 1.0;
+        setTimeout(() => {
+            if (store.defaultSpeed) {
+                this.speed = bclamp(store.defaultSpeed);
+                broadcast();
+            }
+        }, 50);
+    }
+};
+
+const onChangedListeners = [];
+window.browser = {
+    storage: {
+        sync: {
+            get(keys) {
+                const out = {};
+                (Array.isArray(keys) ? keys : [keys]).forEach(k => { if (k in store) out[k] = store[k]; });
+                return Promise.resolve(out);
+            },
+            set(obj) {
+                const changes = {};
+                for (const k in obj) { store[k] = obj[k]; changes[k] = { newValue: obj[k] }; }
+                onChangedListeners.forEach(fn => fn(changes));
+                return Promise.resolve();
+            }
+        },
+        onChanged: { addListener(fn) { onChangedListeners.push(fn); } }
+    },
+    runtime: {
+        onMessage: { addListener(fn) { tabListeners.push(fn); } }, // content.js tourne dans un « onglet »
+        sendMessage(msg, cb) {
+            // Onglet → background : seuls les listeners du background sont appelés.
+            bgListeners.forEach(fn => fn(msg));
+            if (msg.action === 'setSpeed' && msg.fromDetection) detMsgs++;
+            cb && cb({ speed: bg.speed });
+            return Promise.resolve({ speed: bg.speed });
+        }
+    },
+    tabs: {
+        query() { return Promise.resolve([{ id: 1 }]); },
+        sendMessage(id, msg) { tabListeners.forEach(fn => fn(msg)); return Promise.resolve(); },
+        onCreated: { addListener() {} }
+    }
+};
+
+/* Le background « réel » est simulé par la même logique que background.js :
+   il écoute les messages, met à jour vitesse + stockage et re-diffuse. */
+bgListeners.push(msg => bg.handle(msg));
+
+
+store.defaultSpeed = 2;
+document.write('<script src="../content.js"><\/script>');
+</script>
+<script>
+(async () => {
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const ol = document.getElementById('results');
+    const add = (name, ok, d) => { const li = document.createElement('li'); li.textContent = `${name} — ${ok ? 'OK' : 'ÉCHEC'} (${d})`; ol.appendChild(li); };
+    const v = document.getElementById('v1');
+    let rc = 0; v.addEventListener('ratechange', () => rc++);
+    await sleep(1500);
+    rc = 0;
+    await sleep(3200); // 3 tours de boucle à vitesse stable
+    add('Q1 — vitesse stable : aucun ratechange pendant 3 s', rc === 0 && Math.abs(v.playbackRate - 2) < 0.001, `ratechange=${rc}, vitesse=${v.playbackRate}`);
+    rc = 0;
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true, cancelable: true }));
+    await sleep(200);
+    add('Q2 — action de l\'utilisateur : la vitesse change (ratechange émis)', rc >= 1 && Math.abs(v.playbackRate - 2.25) < 0.001, `ratechange=${rc}, vitesse=${v.playbackRate}`);
+    rc = 0;
+    browser.runtime.sendMessage({ action: 'setSpeed', speed: 2.25 }); // même vitesse choisie dans le popup
+    await sleep(200);
+    add('Q3 — même vitesse re-choisie par l\'utilisateur : ré-affirmée (le lecteur se met à jour)', rc >= 1, `ratechange=${rc}`);
+    rc = 0;
+    await sleep(3200);
+    add('Q4 — puis de nouveau silence', rc === 0, `ratechange=${rc}`);
+    /* Lecteur qui pose 0 le temps de charger (ex : lecteur Svelte), puis 1 */
+    v.playbackRate = 0;
+    await sleep(1300); // un tour de boucle
+    add('Q5 — le lecteur pose 0 (chargement) : ni adopté ni ré-appliqué par le plugin', Math.abs(store.defaultSpeed - 2.25) < 0.001 && v._savLabel.textContent !== 'Speed 0x',
+        `mémoire=${store.defaultSpeed}, badge=${v._savLabel.textContent}, vitesse=${v.playbackRate}`);
+    v.playbackRate = 1; // fin du chargement, sans geste de l'utilisateur
+    await sleep(150);
+    add('Q6 — puis 1.0 du lecteur : notre vitesse rétablie', Math.abs(v.playbackRate - 2.25) < 0.001, `vitesse=${v.playbackRate}`);
+    for (let i = 0; i < 6; i++) ol.appendChild(document.createElement('li'));
+})();
+</script></body></html>

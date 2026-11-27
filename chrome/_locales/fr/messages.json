@@ -1,0 +1,138 @@
+{
+  "extDescription": {
+    "message": "Accélérez ou ralentissez toutes les vidéos (YouTube, Twitch, Vimeo…) de 0.25x à 4x, dans tous les onglets. Raccourcis S/D/R."
+  },
+  "optionsTitle": {
+    "message": "SpeedAllVideo — Réglages"
+  },
+  "currentSpeed": {
+    "message": "Vitesse actuelle"
+  },
+  "slowDownAria": {
+    "message": "Ralentir"
+  },
+  "speedUpAria": {
+    "message": "Accélérer"
+  },
+  "resetBtn": {
+    "message": "Réinitialiser (1.0x)"
+  },
+  "shortcuts": {
+    "message": "Raccourcis clavier"
+  },
+  "slowDown": {
+    "message": "Ralentir (−$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "speedUp": {
+    "message": "Accélérer (+$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetSpeed": {
+    "message": "Vitesse normale (1x)"
+  },
+  "speedUpdated": {
+    "message": "✓ Vitesse mise à jour"
+  },
+  "speedStep": {
+    "message": "Pas de vitesse"
+  },
+  "stepHint": {
+    "message": "Pas utilisé par les boutons ± et les raccourcis S / D (ex : 0.10, 0.25, 0.5)"
+  },
+  "invalidStep": {
+    "message": "Pas invalide (entre 0.01 et 4)"
+  },
+  "stepSaved": {
+    "message": "✓ Pas de vitesse enregistré"
+  },
+  "force1xTitle": {
+    "message": "Forcer 1x"
+  },
+  "force1xLabel": {
+    "message": "Forcer la vitesse à 1.0x"
+  },
+  "force1xHint": {
+    "message": "L'extension surveille la vidéo et remet la vitesse à 1.0x si elle en change (utile quand un site force sa propre vitesse, ex : 2x)"
+  },
+  "force1xOn": {
+    "message": "✓ Forcer 1x activé"
+  },
+  "force1xOff": {
+    "message": "Forcer 1x désactivé"
+  },
+  "displayTitle": {
+    "message": "Affichage"
+  },
+  "hideBadgeLabel": {
+    "message": "Masquer le badge de vitesse permanent"
+  },
+  "hideBadgeHint": {
+    "message": "Le petit badge « Speed … » en haut à droite de la vidéo (et du lecteur) ne s'affiche plus"
+  },
+  "hideFlashLabel": {
+    "message": "Masquer l'affichage grand au changement de vitesse"
+  },
+  "hideFlashHint": {
+    "message": "Le « Speed … » en gros au centre de la vidéo n'apparaît plus quand on change la vitesse (boutons, raccourcis S / D)"
+  },
+  "hideBadgeOn": {
+    "message": "✓ Badge permanent masqué"
+  },
+  "hideBadgeOff": {
+    "message": "Badge permanent réaffiché"
+  },
+  "hideFlashOn": {
+    "message": "✓ Affichage grand au changement masqué"
+  },
+  "hideFlashOff": {
+    "message": "Affichage grand au changement réaffiché"
+  },
+  "soundFxLabel": {
+    "message": "Signal sonore au changement de vitesse"
+  },
+  "soundFxHint": {
+    "message": "Un court « blip » façon jeu vidéo à chaque changement (raccourcis S / D / R, boutons) : plus aigu = plus rapide. Aussi réglable avec l'icône haut-parleur du menu. Toujours joué quand la vidéo elle-même est en plein écran (rien ne peut s'afficher par-dessus)."
+  },
+  "soundFxOn": {
+    "message": "✓ Signal sonore activé"
+  },
+  "soundFxOff": {
+    "message": "Signal sonore désactivé"
+  },
+  "muteAria": {
+    "message": "Couper le son des boutons"
+  },
+  "unmuteAria": {
+    "message": "Activer le son des boutons"
+  },
+  "settingsAria": {
+    "message": "Paramètres"
+  },
+  "keysDragHint": {
+    "message": "Glissez une lettre sur une autre pour échanger les raccourcis"
+  },
+  "audioTitle": {
+    "message": "Audio"
+  },
+  "withAudioLabel": {
+    "message": "Accélérer aussi les lecteurs audio"
+  },
+  "withAudioHint": {
+    "message": "Désactivé par défaut. Applique aussi la vitesse aux lecteurs audio des pages (podcasts, livres audio…). Les sons qu'un site joue sans lecteur dans la page ne sont pas concernés."
+  },
+  "withAudioOn": {
+    "message": "✓ Lecteurs audio inclus"
+  },
+  "withAudioOff": {
+    "message": "Lecteurs audio remis à 1x"
+  }
+}

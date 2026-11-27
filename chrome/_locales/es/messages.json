@@ -1,0 +1,138 @@
+{
+  "extDescription": {
+    "message": "Acelera o ralentiza cualquier vídeo (YouTube, Twitch, Vimeo…) de 0,25x a 4x en todas las pestañas. Atajos S/D/R, opción Force 1x."
+  },
+  "optionsTitle": {
+    "message": "SpeedAllVideo — Configuración"
+  },
+  "currentSpeed": {
+    "message": "Velocidad actual"
+  },
+  "slowDownAria": {
+    "message": "Reducir velocidad"
+  },
+  "speedUpAria": {
+    "message": "Aumentar velocidad"
+  },
+  "resetBtn": {
+    "message": "Restablecer (1,0x)"
+  },
+  "shortcuts": {
+    "message": "Atajos de teclado"
+  },
+  "slowDown": {
+    "message": "Reducir velocidad (−$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "speedUp": {
+    "message": "Aumentar velocidad (+$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetSpeed": {
+    "message": "Restablecer velocidad (1x)"
+  },
+  "speedUpdated": {
+    "message": "✓ Velocidad actualizada"
+  },
+  "speedStep": {
+    "message": "Paso de velocidad"
+  },
+  "stepHint": {
+    "message": "Paso utilizado por los botones ± y los atajos S / D (p. ej. 0,10, 0,25, 0,5)"
+  },
+  "invalidStep": {
+    "message": "Paso no válido (usa 0,01 – 4)"
+  },
+  "stepSaved": {
+    "message": "✓ Paso de velocidad guardado"
+  },
+  "force1xTitle": {
+    "message": "Forzar 1x"
+  },
+  "force1xLabel": {
+    "message": "Forzar velocidad a 1,0x"
+  },
+  "force1xHint": {
+    "message": "La extensión vigila el vídeo y vuelve a poner la velocidad a 1,0x si cambia (útil cuando un sitio impone su propia velocidad, p. ej. 2x)"
+  },
+  "force1xOn": {
+    "message": "✓ Forzar 1x activado"
+  },
+  "force1xOff": {
+    "message": "Forzar 1x desactivado"
+  },
+  "displayTitle": {
+    "message": "Visualización"
+  },
+  "hideBadgeLabel": {
+    "message": "Ocultar la insignia permanente de velocidad"
+  },
+  "hideBadgeHint": {
+    "message": "La pequeña insignia «Velocidad…» en la esquina superior derecha del vídeo (y del reproductor) ya no se muestra"
+  },
+  "hideFlashLabel": {
+    "message": "Ocultar la gran indicación de velocidad al cambiar"
+  },
+  "hideFlashHint": {
+    "message": "La gran indicación «Velocidad…» en el centro del vídeo ya no aparece al cambiar la velocidad (botones, atajos S / D)"
+  },
+  "hideBadgeOn": {
+    "message": "✓ Insignia permanente oculta"
+  },
+  "hideBadgeOff": {
+    "message": "Insignia permanente visible de nuevo"
+  },
+  "hideFlashOn": {
+    "message": "✓ Gran indicación al cambio oculta"
+  },
+  "hideFlashOff": {
+    "message": "Gran indicación al cambio visible de nuevo"
+  },
+  "soundFxLabel": {
+    "message": "Indicador sonoro al cambiar la velocidad"
+  },
+  "soundFxHint": {
+    "message": "Un breve «blip» tipo videojuego en cada cambio (atajos S / D / R, botones): tono más agudo = más rápido. También se activa/desactiva con el icono del altavoz en el menú. Se reproduce siempre cuando el vídeo está en pantalla completa (nada puede superponerse a él)."
+  },
+  "soundFxOn": {
+    "message": "✓ Indicador sonoro activado"
+  },
+  "soundFxOff": {
+    "message": "Indicador sonoro desactivado"
+  },
+  "muteAria": {
+    "message": "Silenciar sonidos de los botones"
+  },
+  "unmuteAria": {
+    "message": "Activar sonidos de los botones"
+  },
+  "settingsAria": {
+    "message": "Configuración"
+  },
+  "keysDragHint": {
+    "message": "Arrastra una letra sobre otra para intercambiar los atajos"
+  },
+  "audioTitle": {
+    "message": "Audio"
+  },
+  "withAudioLabel": {
+    "message": "Aplicar también a reproductores de audio"
+  },
+  "withAudioHint": {
+    "message": "Desactivado por defecto. Aplica la velocidad a los reproductores de audio de las páginas web (pódcasts, audiolibros…). Los sonidos que reproduce un sitio sin un reproductor de audio en la página no se ven afectados."
+  },
+  "withAudioOn": {
+    "message": "✓ Reproductores de audio incluidos"
+  },
+  "withAudioOff": {
+    "message": "Reproductores de audio de nuevo a 1x"
+  }
+}

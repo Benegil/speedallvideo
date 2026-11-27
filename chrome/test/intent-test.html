@@ -1,0 +1,134 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Test intention (1.0 du lecteur)</title>
+<style>body{margin:0;background:#222;color:#eee;font-family:sans-serif}</style></head><body>
+<p>Le lecteur écrit 1.0 en s'initialisant (Netflix, YouTube…) : à ne pas confondre avec un choix « Normal » de l'utilisateur</p>
+<video id="v1" src="video.mp4" width="480" height="270" muted autoplay loop></video>
+<button id="menu">⚙ Vitesse</button> <button id="normal">Normal</button>
+<ol id="results"></ol>
+<script>
+/* ================= Simulation de browser.* =================
+   Fidèle au comportement réel testé :
+   - le background est « froid » au démarrage (speed=1.0) et ne charge son
+     stockage qu'asynchronement, puis re-diffuse à tous les onglets ;
+   - storage.sync.set notifie onChanged (comme Firefox) ;
+   - runtime.sendMessage(msg, cb) répond via callback ET renvoie une Promise. */
+const store = { defaultSpeed: 1.0, speedStep: '0.25', forceOneX: false };
+const bgListeners = [];   // listeners du background SIMULÉ (ci-dessous)
+const tabListeners = [];  // listeners des « onglets » : content.js s'y enregistre
+let detMsgs = 0;          // messages setSpeed reçus avec fromDetection
+
+const bclamp = s => Math.min(4, Math.max(0.25, s));
+function broadcast() {
+    tabListeners.forEach(fn => fn({ action: 'setSpeed', speed: bg.speed }));
+}
+const bg = {
+    speed: 1.0, // froid : pas encore chargé le stockage (comme au rechargement d'extension)
+    handle(msg, cb) {
+        if (msg.action === 'setSpeed') {
+            this.speed = bclamp(msg.speed);
+            store.defaultSpeed = this.speed;
+            broadcast();
+        } else if (msg.action === 'getCurrentSpeed') {
+            cb && cb({ speed: this.speed });
+        }
+    },
+    /* Rechargement simulé : le background repart à 1.0 puis recharge son stockage. */
+    reload() {
+        this.speed = 1.0;
+        setTimeout(() => {
+            if (store.defaultSpeed) {
+                this.speed = bclamp(store.defaultSpeed);
+                broadcast();
+            }
+        }, 50);
+    }
+};
+
+const onChangedListeners = [];
+window.browser = {
+    storage: {
+        sync: {
+            get(keys) {
+                const out = {};
+                (Array.isArray(keys) ? keys : [keys]).forEach(k => { if (k in store) out[k] = store[k]; });
+                return Promise.resolve(out);
+            },
+            set(obj) {
+                const changes = {};
+                for (const k in obj) { store[k] = obj[k]; changes[k] = { newValue: obj[k] }; }
+                onChangedListeners.forEach(fn => fn(changes));
+                return Promise.resolve();
+            }
+        },
+        onChanged: { addListener(fn) { onChangedListeners.push(fn); } }
+    },
+    runtime: {
+        onMessage: { addListener(fn) { tabListeners.push(fn); } }, // content.js tourne dans un « onglet »
+        sendMessage(msg, cb) {
+            // Onglet → background : seuls les listeners du background sont appelés.
+            bgListeners.forEach(fn => fn(msg));
+            if (msg.action === 'setSpeed' && msg.fromDetection) detMsgs++;
+            cb && cb({ speed: bg.speed });
+            return Promise.resolve({ speed: bg.speed });
+        }
+    },
+    tabs: {
+        query() { return Promise.resolve([{ id: 1 }]); },
+        sendMessage(id, msg) { tabListeners.forEach(fn => fn(msg)); return Promise.resolve(); },
+        onCreated: { addListener() {} }
+    }
+};
+
+/* Le background « réel » est simulé par la même logique que background.js :
+   il écoute les messages, met à jour vitesse + stockage et re-diffuse. */
+bgListeners.push(msg => bg.handle(msg));
+
+
+store.defaultSpeed = 1.5;
+document.write('<script src="../content.js"><\/script>');
+</script>
+<script>
+(async () => {
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const ol = document.getElementById('results');
+    const add = (name, ok, d) => { const li = document.createElement('li'); li.textContent = `${name} — ${ok ? 'OK' : 'ÉCHEC'} (${d})`; ol.appendChild(li); };
+    const v = document.getElementById('v1');
+    const click = id => document.getElementById(id).dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    await sleep(1300);
+
+    /* S1. Réinitialisation du lecteur : nouvelle source + le lecteur écrit 1.0 (sans geste) */
+    v.src = 'video.mp4?ep=2'; v.load();
+    await new Promise(r => v.addEventListener('loadedmetadata', r, { once: true }));
+    v.playbackRate = 1; // comme Netflix/YouTube à l'init
+    await sleep(1500);
+    add('S1 — 1.0 écrit par le lecteur à l\'init : vitesse rétablie', Math.abs(v.playbackRate - 1.5) < 0.001 && Math.abs(store.defaultSpeed - 1.5) < 0.001,
+        `rate=${v.playbackRate}, mémoire=${store.defaultSpeed}`);
+
+    /* S2. 1.0 autonome plus tard (pub, changement de qualité…), sans geste : rétabli très vite */
+    await sleep(1000);
+    v.playbackRate = 1;
+    await sleep(80);
+    add('S2 — 1.0 autonome : rétabli immédiatement (< 100 ms)', Math.abs(v.playbackRate - 1.5) < 0.001 && Math.abs(store.defaultSpeed - 1.5) < 0.001,
+        `rate=${v.playbackRate}, mémoire=${store.defaultSpeed}`);
+
+    /* S3. L'utilisateur choisit « Normal » dans le menu du site : 2 clics puis 1.0 → adopté */
+    await sleep(2500); // hors fenêtre d'init
+    click('menu'); await sleep(300); click('normal'); v.playbackRate = 1;
+    await sleep(1500);
+    add('S3 — menu « Normal » (2 clics) : 1x adopté', Math.abs(v.playbackRate - 1) < 0.001 && Math.abs(store.defaultSpeed - 1) < 0.001,
+        `rate=${v.playbackRate}, mémoire=${store.defaultSpeed}`);
+
+    /* S4. Raccourci natif du lecteur (ex : YouTube Maj+<) puis 1.0 → adopté */
+    browser.runtime.sendMessage({ action: 'setSpeed', speed: 2 }); await sleep(1200);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: '<', shiftKey: true, bubbles: true })); v.playbackRate = 1;
+    await sleep(1500);
+    add('S4 — touche du lecteur puis 1.0 : adopté', Math.abs(v.playbackRate - 1) < 0.001 && Math.abs(store.defaultSpeed - 1) < 0.001,
+        `rate=${v.playbackRate}, mémoire=${store.defaultSpeed}`);
+
+    /* S5. Le site pose une vitesse ≠ 1 sans geste (ex : YouTube restaure 0.75) → adoptée */
+    v.playbackRate = 0.75;
+    await sleep(1500);
+    add('S5 — vitesse ≠ 1 posée par le site : adoptée', Math.abs(v.playbackRate - 0.75) < 0.001 && Math.abs(store.defaultSpeed - 0.75) < 0.001,
+        `rate=${v.playbackRate}, mémoire=${store.defaultSpeed}`);
+    for (let i = 0; i < 5; i++) ol.appendChild(document.createElement('li'));
+})();
+</script></body></html>
