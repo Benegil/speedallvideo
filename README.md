@@ -21,9 +21,10 @@ Dérivée de [SpeedyVideo](https://addons.mozilla.org/fr/firefox/addon/speedy-vi
 - **Respect du site** : la vitesse posée par le lecteur (menu YouTube…) est adoptée ; un retour à 1.0 n'est adopté qu'après un geste de l'utilisateur — les 1.0 écrits par le lecteur à son initialisation sont ignorés. La vitesse tient à l'épisode suivant.
 - **Neutre à l'installation** : rien n'est modifié tant qu'aucune vitesse n'a été choisie.
 - **Force 1x** : force la vitesse à 1.0x et mémorise celle choisie dans le lecteur du site (restaurée à la désactivation).
-- **Raccourcis clavier** (hors champs de saisie) : `S` ralentir, `D` accélérer, `R` retour à 1x — pas réglable dans les options.
+- **Raccourcis clavier** (hors champs de saisie) : `S` ralentir, `D` accélérer, `R` retour à 1x — les trois lettres s'échangent par glisser-déposer dans le popup (ex : `S` pour « speed » = accélérer).
+- **Engrenage** dans le popup : ouvre les paramètres.
 - **Audio** (option, désactivée par défaut) : applique aussi la vitesse aux lecteurs `<audio>` des pages (podcasts, livres audio).
-- **Interface** en français et en anglais (suit la langue du navigateur).
+- **Interface** en 12 langues (suit la langue du navigateur) : français, anglais, espagnol, allemand, italien, portugais (Brésil), néerlandais, polonais, russe, japonais, chinois simplifié, coréen.
 
 ## Installation (développement)
 
@@ -96,6 +97,7 @@ La fiche AMO (description longue fr/en, captures) est dans `amo/`. Pour régén�
 | `hideFlash` | false | Masque le grand affichage au changement |
 | `soundFx` | true | Signal sonore (icône du popup = case des options) |
 | `withAudio` | false | Inclut les lecteurs `<audio>` |
+| `keyMap` | `{slow:'s', fast:'d', reset:'r'}` | Lettres des raccourcis (permutation de s / d / r) |
 
 ## Licence
 

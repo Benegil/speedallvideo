@@ -609,7 +609,8 @@ browser.runtime.onMessage.addListener(msg => {
    même chargé son stockage → il renvoyait 1.0 et la vidéo (ex : à 0.25x)
    passait « tout de suite à 1x ». ready est levé ICI ; en attendant, ni la
    boucle ni l'observer n'écrasent la vitesse réelle. */
-browser.storage.sync.get(['forceOneX', 'speedStep', 'defaultSpeed', 'hideBadge', 'hideFlash', 'soundFx', 'withAudio']).then(res => {
+browser.storage.sync.get(['forceOneX', 'speedStep', 'defaultSpeed', 'hideBadge', 'hideFlash', 'soundFx', 'withAudio', 'keyMap']).then(res => {
+    setKeyMap(res.keyMap);
     soundFx = res.soundFx !== false;
     withAudio = !!res.withAudio;
     force1x = !!res.forceOneX;
@@ -649,6 +650,7 @@ browser.storage.onChanged.addListener(changes => {
         if (s > 0 && s <= MAX) step = s;
     }
     if (changes.soundFx) soundFx = changes.soundFx.newValue !== false;
+    if (changes.keyMap) setKeyMap(changes.keyMap.newValue || { slow: 's', fast: 'd', reset: 'r' });
     if (changes.withAudio) {
         withAudio = !!changes.withAudio.newValue;
         if (!withAudio) { // désactivée : les lecteurs audio reviennent à 1x, sans badge
@@ -686,9 +688,19 @@ browser.storage.onChanged.addListener(changes => {
 // blip() : défini dans sound.js (chargé avant content.js, cf. manifest)
 const videoFullscreen = () => { const f = document.fullscreenElement; return !!f && f.tagName === 'VIDEO'; };
 
-/* ---------- Raccourcis clavier : D = accélérer, S = ralentir, R = reset 1x ----------
+/* ---------- Raccourcis clavier : D = accélérer, S = ralentir, R = reset 1x (par défaut) ----------
    Gérés ici (pas en « commands » globaux) pour ne pas déclencher quand on tape
    dans un champ de formulaire ou avec un modificateur. */
+/* Lettres échangeables depuis le popup (glisser-déposer) : keyMap = { slow, fast, reset }
+   ne peut être qu'une permutation de s / d / r. lettre → action : */
+let keyAct = { s: 'slow', d: 'fast', r: 'reset' };
+function setKeyMap(m) {
+    if (!m || typeof m !== 'object') return;
+    const l = [m.slow, m.fast, m.reset];
+    if (l.slice().sort().join('') !== 'drs') return; // valeur invalide : on garde l'actuelle
+    keyAct = { [m.slow]: 'slow', [m.fast]: 'fast', [m.reset]: 'reset' };
+}
+
 function typing(el) {
     if (!el) return false;
     const tag = (el.tagName || '').toLowerCase();
@@ -700,10 +712,10 @@ on(document, 'keydown', e => {
     if (e.ctrlKey || e.altKey || e.metaKey) return;
     if (typing(e.target)) return;
     let next = null;
-    switch (e.key.toLowerCase()) {
-        case 'd': next = clamp(speed + step); break;
-        case 's': next = clamp(speed - step); break;
-        case 'r': next = 1.0; break;
+    switch (keyAct[e.key.toLowerCase()]) {
+        case 'fast': next = clamp(speed + step); break;
+        case 'slow': next = clamp(speed - step); break;
+        case 'reset': next = 1.0; break;
         default: return;
     }
     e.preventDefault();

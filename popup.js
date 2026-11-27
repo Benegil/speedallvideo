@@ -50,6 +50,37 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sound) blip(current, current); // confirmation : on entend le son réactivé
     });
 
+    // Raccourcis : glisser une lettre sur une autre échange les deux (keyMap, permutation de s/d/r)
+    const keyEls = [...document.querySelectorAll('.key[data-act]')];
+    let keyMap = { slow: 's', fast: 'd', reset: 'r' };
+    function renderKeys() { keyEls.forEach(k => { k.textContent = keyMap[k.dataset.act].toUpperCase(); }); }
+    browser.storage.sync.get('keyMap').then(res => {
+        const m = res.keyMap;
+        if (m && [m.slow, m.fast, m.reset].sort().join('') === 'drs') { keyMap = m; renderKeys(); }
+    });
+    let dragAct = null;
+    keyEls.forEach(k => {
+        k.addEventListener('dragstart', e => { dragAct = k.dataset.act; k.classList.add('dragging'); e.dataTransfer.setData('text/plain', dragAct); e.dataTransfer.effectAllowed = 'move'; });
+        k.addEventListener('dragend', () => { dragAct = null; keyEls.forEach(x => x.classList.remove('dragging', 'over')); });
+        k.addEventListener('dragover', e => { if (dragAct && dragAct !== k.dataset.act) { e.preventDefault(); k.classList.add('over'); } });
+        k.addEventListener('dragleave', () => k.classList.remove('over'));
+        k.addEventListener('drop', e => {
+            e.preventDefault();
+            const a = dragAct, b = k.dataset.act;
+            if (!a || a === b) return;
+            [keyMap[a], keyMap[b]] = [keyMap[b], keyMap[a]];
+            keyMap = { ...keyMap };
+            browser.storage.sync.set({ keyMap });
+            renderKeys();
+            if (sound) blip(current, current);
+        });
+    });
+
+    // Engrenage : ouvre la page des paramètres de l'extension
+    const gear = $('gear');
+    gear.title = t('settingsAria');
+    gear.addEventListener('click', () => { browser.runtime.openOptionsPage(); window.close(); });
+
     function setSpeed(s) {
         const prev = current;
         current = round2(clamp(s));

@@ -1,0 +1,138 @@
+{
+  "extDescription": {
+    "message": "Jedes Video (YouTube, Twitch, Vimeo…) schneller oder langsamer, 0,25x bis 4x, in allen Tabs. Tasten S/D/R, Option „Force 1x“."
+  },
+  "optionsTitle": {
+    "message": "SpeedAllVideo — Einstellungen"
+  },
+  "currentSpeed": {
+    "message": "Aktuelle Geschwindigkeit"
+  },
+  "slowDownAria": {
+    "message": "Verlangsamen"
+  },
+  "speedUpAria": {
+    "message": "Beschleunigen"
+  },
+  "resetBtn": {
+    "message": "Zurücksetzen (1,0x)"
+  },
+  "shortcuts": {
+    "message": "Tastaturkürzel"
+  },
+  "slowDown": {
+    "message": "Verlangsamen (−$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "speedUp": {
+    "message": "Beschleunigen (+$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetSpeed": {
+    "message": "Geschwindigkeit zurücksetzen (1x)"
+  },
+  "speedUpdated": {
+    "message": "✓ Geschwindigkeit aktualisiert"
+  },
+  "speedStep": {
+    "message": "Geschwindigkeitsschritt"
+  },
+  "stepHint": {
+    "message": "Schritt, der von den ±-Schaltflächen und den S-/D-Shortcuts verwendet wird (z. B. 0,10, 0,25, 0,5)"
+  },
+  "invalidStep": {
+    "message": "Ungültiger Schritt (verwende 0,01 – 4)"
+  },
+  "stepSaved": {
+    "message": "✓ Geschwindigkeitsschritt gespeichert"
+  },
+  "force1xTitle": {
+    "message": "Force 1x"
+  },
+  "force1xLabel": {
+    "message": "Geschwindigkeit auf 1,0x erzwingen"
+  },
+  "force1xHint": {
+    "message": "Die Erweiterung überwacht das Video und setzt die Geschwindigkeit bei Änderung wieder auf 1,0x (nützlich, wenn eine Seite ihre eigene Geschwindigkeit erzwingt, z. B. 2x)"
+  },
+  "force1xOn": {
+    "message": "✓ Force 1x aktiviert"
+  },
+  "force1xOff": {
+    "message": "Force 1x deaktiviert"
+  },
+  "displayTitle": {
+    "message": "Anzeige"
+  },
+  "hideBadgeLabel": {
+    "message": "Ständigen Geschwindigkeits-Badge ausblenden"
+  },
+  "hideBadgeHint": {
+    "message": "Der kleine „Speed …“-Badge oben rechts im Video (und Player) wird nicht mehr angezeigt"
+  },
+  "hideFlashLabel": {
+    "message": "Große Geschwindigkeitsanzeige bei Änderung ausblenden"
+  },
+  "hideFlashHint": {
+    "message": "Die große „Speed …“-Anzeige in der Mitte des Videos erscheint bei Geschwindigkeitsänderungen (Schaltflächen, S-/D-Shortcuts) nicht mehr"
+  },
+  "hideBadgeOn": {
+    "message": "✓ Permanenter Badge ausgeblendet"
+  },
+  "hideBadgeOff": {
+    "message": "Permanenter Badge wieder angezeigt"
+  },
+  "hideFlashOn": {
+    "message": "✓ Große Anzeige bei Änderung ausgeblendet"
+  },
+  "hideFlashOff": {
+    "message": "Große Anzeige bei Änderung wieder angezeigt"
+  },
+  "soundFxLabel": {
+    "message": "Tonhinweis bei Geschwindigkeitsänderung"
+  },
+  "soundFxHint": {
+    "message": "Ein kurzer, spielartiger „Blip“ bei jeder Änderung (S-/D-/R-Shortcuts, Schaltflächen): höhere Tonhöhe = schnellere Geschwindigkeit. Auch über das Lautsprecher-Symbol im Menü umschaltbar. Wird immer abgespielt, wenn das Video selbst im Vollbildmodus ist (nichts kann darüber eingeblendet werden)."
+  },
+  "soundFxOn": {
+    "message": "✓ Tonhinweis aktiviert"
+  },
+  "soundFxOff": {
+    "message": "Tonhinweis deaktiviert"
+  },
+  "muteAria": {
+    "message": "Tastentöne stumm schalten"
+  },
+  "unmuteAria": {
+    "message": "Tastentöne aktivieren"
+  },
+  "settingsAria": {
+    "message": "Einstellungen"
+  },
+  "keysDragHint": {
+    "message": "Ziehe einen Buchstaben auf einen anderen, um die Tasten zu tauschen"
+  },
+  "audioTitle": {
+    "message": "Audio"
+  },
+  "withAudioLabel": {
+    "message": "Auch Audio-Player beschleunigen"
+  },
+  "withAudioHint": {
+    "message": "Standardmäßig aus. Wendet die Geschwindigkeit auch auf Audio-Player von Webseiten an (Podcasts, Hörbücher…). Sounds, die eine Seite ohne Audio-Player auf der Seite abspielt, sind davon nicht betroffen."
+  },
+  "withAudioOn": {
+    "message": "✓ Audio-Player einbezogen"
+  },
+  "withAudioOff": {
+    "message": "Audio-Player wieder auf 1x"
+  }
+}

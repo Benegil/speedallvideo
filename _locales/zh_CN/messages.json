@@ -1,0 +1,138 @@
+{
+  "extDescription": {
+    "message": "加速或减速任何视频（YouTube、Twitch、Vimeo…），范围从 0.25x 到 4x，适用于所有标签页。支持 S/D/R 快捷键和强制 1x 选项。"
+  },
+  "optionsTitle": {
+    "message": "SpeedAllVideo — 设置"
+  },
+  "currentSpeed": {
+    "message": "当前速度"
+  },
+  "slowDownAria": {
+    "message": "减速"
+  },
+  "speedUpAria": {
+    "message": "加速"
+  },
+  "resetBtn": {
+    "message": "重置 (1.0x)"
+  },
+  "shortcuts": {
+    "message": "键盘快捷键"
+  },
+  "slowDown": {
+    "message": "减速 (−$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "speedUp": {
+    "message": "加速 (+$STEP$x)",
+    "placeholders": {
+      "step": {
+        "content": "$1"
+      }
+    }
+  },
+  "resetSpeed": {
+    "message": "重置速度 (1x)"
+  },
+  "speedUpdated": {
+    "message": "✓ 速度已更新"
+  },
+  "speedStep": {
+    "message": "速度步长"
+  },
+  "stepHint": {
+    "message": "± 按钮和 S / D 快捷键使用的步长（例如 0.10、0.25、0.5）"
+  },
+  "invalidStep": {
+    "message": "无效步长（请使用 0.01 – 4）"
+  },
+  "stepSaved": {
+    "message": "✓ 速度步长已保存"
+  },
+  "force1xTitle": {
+    "message": "强制 1x"
+  },
+  "force1xLabel": {
+    "message": "强制速度为 1.0x"
+  },
+  "force1xHint": {
+    "message": "扩展程序会监控视频，并在速度发生变化时将其恢复为 1.0x（当网站强制使用自身速度时非常有用，例如 2x）"
+  },
+  "force1xOn": {
+    "message": "✓ 强制 1x 已启用"
+  },
+  "force1xOff": {
+    "message": "强制 1x 已禁用"
+  },
+  "displayTitle": {
+    "message": "显示"
+  },
+  "hideBadgeLabel": {
+    "message": "隐藏常驻速度徽章"
+  },
+  "hideBadgeHint": {
+    "message": "不再显示视频（及播放器）右上角的小“Speed …”徽章"
+  },
+  "hideFlashLabel": {
+    "message": "隐藏变化时的大速度显示"
+  },
+  "hideFlashHint": {
+    "message": "当速度发生变化时（按钮、S / D 快捷键），不再显示视频中央的大“Speed …”提示"
+  },
+  "hideBadgeOn": {
+    "message": "✓ 常驻徽章已隐藏"
+  },
+  "hideBadgeOff": {
+    "message": "常驻徽章再次显示"
+  },
+  "hideFlashOn": {
+    "message": "✓ 变化时的大显示已隐藏"
+  },
+  "hideFlashOff": {
+    "message": "变化时的大显示再次显示"
+  },
+  "soundFxLabel": {
+    "message": "速度变化时播放提示音"
+  },
+  "soundFxHint": {
+    "message": "每次变化时播放简短的游戏风格“哔”声（S / D / R 快捷键、按钮）：音调越高表示速度越快。也可通过菜单中的扬声器图标切换。当视频本身处于全屏模式时始终播放（无法在其上方显示任何内容）。"
+  },
+  "soundFxOn": {
+    "message": "✓ 提示音已启用"
+  },
+  "soundFxOff": {
+    "message": "提示音已禁用"
+  },
+  "muteAria": {
+    "message": "静音按钮声音"
+  },
+  "unmuteAria": {
+    "message": "开启按钮声音"
+  },
+  "settingsAria": {
+    "message": "设置"
+  },
+  "keysDragHint": {
+    "message": "拖动一个字母到另一个字母上以交换快捷键"
+  },
+  "audioTitle": {
+    "message": "音频"
+  },
+  "withAudioLabel": {
+    "message": "同时加速音频播放器"
+  },
+  "withAudioHint": {
+    "message": "默认关闭。将速度同时应用于网页上的音频播放器（播客、有声书…）。未使用页面音频播放器播放的网站声音不受影响。"
+  },
+  "withAudioOn": {
+    "message": "✓ 已包含音频播放器"
+  },
+  "withAudioOff": {
+    "message": "音频播放器恢复为 1x"
+  }
+}

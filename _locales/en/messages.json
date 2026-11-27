@@ -114,6 +114,12 @@
   "unmuteAria": {
     "message": "Turn button sounds on"
   },
+  "settingsAria": {
+    "message": "Settings"
+  },
+  "keysDragHint": {
+    "message": "Drag a letter onto another to swap the shortcuts"
+  },
   "audioTitle": {
     "message": "Audio"
   },
